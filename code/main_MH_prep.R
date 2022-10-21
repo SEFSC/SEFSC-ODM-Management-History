@@ -16,6 +16,8 @@ here::i_am('code/main_MH_prep.R')
 if (!dir.exists(here("data"))){ dir.create(here("data")) }
 if (!dir.exists(here("data", "raw"))){ dir.create(here("data", "raw")) }
 if (!dir.exists(here("data", "interim"))){ dir.create(here("data", "interim")) }
+if (!dir.exists(here("data", "interim", "sector_clusters"))){ dir.create(here("data", "interim", "sector_clusters")) }
+if (!dir.exists(here("data", "interim", "clusters"))){ dir.create(here("data", "interim", "clusters")) }
 if (!dir.exists(here("data", "processed"))){ dir.create(here("data", "processed")) }
 
 # Authenticate email ####
