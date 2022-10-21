@@ -37,7 +37,7 @@ sector.match <- c("MANAGEMENT_TYPE_USE",
   }
 
   # CHECK: Get starting number of existing sector groupings for reference
-  clusters_max = max(c(existing_sector_clusters$SECTOR_ID,0))
+  clusters_max = max(c(existing_sector_clusters$SECTOR_ID, 0))
 
 # Create new SECTOR_ID for new files ####
 # CREATE: Assign numbers (SECTOR_ID) to any new sector groupings based on newly downloaded data

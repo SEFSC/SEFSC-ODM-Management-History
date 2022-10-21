@@ -22,12 +22,19 @@ cluster.match <- c("MANAGEMENT_TYPE_USE",
 cluster_files <- dir(here('data/interim/clusters'), full.names = TRUE)
 
   #Create existing_clusters data frame that includes previous CLUSTER groupings 
-  existing_clusters <- cluster_files %>%
-    map(read_csv) %>% 
-    reduce(rbind)
+  if(length(cluster_files) > 0) {
+    existing_clusters <- cluster_files %>%
+      map(read_csv) %>% 
+      reduce(rbind)
+  } else {
+    existing_clusters <- mh_subsect_expanded %>%
+      select(one_of(cluster.match)) %>%
+      filter(FMP == "") %>%
+      add_column(CLUSTER = NA)
+  }
 
   # CHECK: get starting number of current CLUSTERS for reference
-  clusters_max = max(existing_clusters$CLUSTER)
+  clusters_max = max(c(existing_clusters$CLUSTER, 0))
 
 # Create new CLUSTER IDs for new files ####
 # CREATE: Assign new CLUSTER_ID to any new CLUSTER groupings
@@ -73,4 +80,5 @@ dim(multi_reg)
     mutate_at("MULTI_REG", ~replace(., is.na(.), 0)) %>%
     # CHECK: Does this CLUSTER have any instances of a MULTI_REG?
     mutate(MULTI_REG_CLUSTER = as.numeric(CLUSTER %in% multi_reg$CLUSTER)) 
+  
   
