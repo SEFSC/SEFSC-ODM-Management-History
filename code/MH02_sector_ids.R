@@ -25,19 +25,26 @@ sector.match <- c("MANAGEMENT_TYPE_USE",
 
   # Read in and combine sector_id_files with existing_sector_clusters
   # This step combines any new sector_id_files with old sector groupings outlined in existing_sector_clusters
-  existing_sector_clusters <- sector_id_files %>%
-    map(read_csv) %>% 
-    reduce(rbind)
+  if(length(sector_id_files) > 0) {
+    existing_sector_clusters <- sector_id_files %>%
+      map(read_csv) %>% 
+      reduce(rbind)
+  } else {
+    existing_sector_clusters <- mh_newvar %>%
+      select(one_of(sector.match)) %>%
+      filter(FMP == "") %>%
+      add_column(SECTOR_ID = NA)
+  }
 
   # CHECK: Get starting number of existing sector groupings for reference
-  clusters_max = max(existing_sector_clusters$SECTOR_ID)
+  clusters_max = max(c(existing_sector_clusters$SECTOR_ID,0))
 
 # Create new SECTOR_ID for new files ####
 # CREATE: Assign numbers (SECTOR_ID) to any new sector groupings based on newly downloaded data
 new_sector_clusters <- mh_newvar %>%
   select(one_of(sector.match)) %>%
   distinct() %>%
-  anti_join(existing_sector_clusters) %>%
+  anti_join(existing_sector_clusters, by = c("MANAGEMENT_TYPE_USE", "JURISDICTION", "JURISDICTIONAL_WATERS", "FMP", "SECTOR_USE", "REGION", "SPP_NAME")) %>%
   mutate(SECTOR_ID = (1:n() + clusters_max)[seq_len(nrow(.))])
 
   # WRITE: export new sector groupings into mh_sector_clusters_ CSV 
@@ -135,3 +142,5 @@ mh_subsect_expanded <- left_join(mh_sector_id, expansions, by = c("SECTOR_USE", 
                                    TRUE ~ SUBSECTOR)) %>%
   # Expand SUBSECTOR_USE at the commas
   separate_rows(SUBSECTOR_USE, sep = ", ")
+
+  
