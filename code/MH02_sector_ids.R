@@ -1,6 +1,9 @@
 # Script 2
 # Create Sector IDs and Address SECTOR forks by expanding SUBSECTOR information
 
+# Suppress summarize info ####
+options(dplyr.summarise.inform = FALSE)
+
 # Overview: ####
   # Define matching variables for sector groupings to create SECTOR_ID
   # Read in files with existing SECTOR_ID 
@@ -37,7 +40,7 @@ sector.match <- c("MANAGEMENT_TYPE_USE",
   }
 
   # CHECK: Get starting number of existing sector groupings for reference
-  clusters_max = max(c(existing_sector_clusters$SECTOR_ID, 0))
+  sector_max = max(c(existing_sector_clusters$SECTOR_ID, 0))
 
 # Create new SECTOR_ID for new files ####
 # CREATE: Assign numbers (SECTOR_ID) to any new sector groupings based on newly downloaded data
@@ -45,7 +48,7 @@ new_sector_clusters <- mh_newvar %>%
   select(one_of(sector.match)) %>%
   distinct() %>%
   anti_join(existing_sector_clusters, by = c("MANAGEMENT_TYPE_USE", "JURISDICTION", "JURISDICTIONAL_WATERS", "FMP", "SECTOR_USE", "REGION", "SPP_NAME")) %>%
-  mutate(SECTOR_ID = (1:n() + clusters_max)[seq_len(nrow(.))])
+  mutate(SECTOR_ID = (1:n() + sector_max)[seq_len(nrow(.))])
 
   # WRITE: export new sector groupings into mh_sector_clusters_ CSV 
   if(length(new_sector_clusters$SECTOR_ID) > 0) {
