@@ -1,6 +1,9 @@
 # Script 3
 # Group data into processing CLUSTER groupings and create CLUSTER IDs
 
+# Suppress summarize info ####
+options(dplyr.summarise.inform = FALSE)
+
 # Overview: ####
  # Define matching variables for CLUSTER groupings
  # Read in files with existing CLUSTER IDs
