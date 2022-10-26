@@ -88,6 +88,7 @@ mh_sp_expanded_n <- mh_dates %>%
 # ADDED_SP_DATE indicates the date that the species was added to the SPECIES_AGGREGATE or SPECIES_GROUP
 # REMOVED_SP_DATE indicates the date that the species was removed from the SPECIES_AGGREGATE or SPECIES_GROUP
 chk_spp <- mh_sp_expanded %>%
+  ungroup() %>%
   mutate(chk_spp = case_when(REMOVED_SP_DATE < START_DATE ~ 1,
                              REMOVED_SP_DATE < END_DATE & REMOVED_SP_DATE > START_DATE ~ 2,
                              ADDED_SP_DATE > START_DATE & END_DATE > ADDED_SP_DATE  ~ 3,
@@ -165,7 +166,7 @@ chk_spp <- mh_sp_expanded %>%
 write.csv(mh_expanded, here("data", "processed", paste0("mh_expanded_", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
 
   # Subset to fully processed component of mh_expanded
-  # These components will not need to be removed one processing accomodates the necessary logic
+  # These components will not need to be removed one processing accommodates the necessary logic
   cluster_drop <- mh_expanded %>%
     filter(MULTI_REG == 1 | 
              MANAGEMENT_STATUS_USE %in% c("DELAYED", "WITHDRAWN") |
