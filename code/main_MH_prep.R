@@ -39,7 +39,7 @@ load(here('data/interim', 'MH_clean_spp_tables.RData'))
 
 # 0B: Data Formatting ####
   # Data frame result: mh_cleaned
-  source(here('code', 'MH00_data_formatting.R'))
+source(here('code', 'MH00_data_formatting.R'))
 
 # 1: Create new variables ####
   # Data frame result: mh_newvar
