@@ -52,6 +52,11 @@ new_clusters <- mh_subsect_expanded %>%
     write_csv(new_clusters, 
               here("data/interim/clusters", paste0("mh_unique_clusters_", format(Sys.Date(), "%d%b%Y"),".csv")))
   }
+  
+  # Alert the user that new clusters were created
+  if(nrow(new_sector_clusters) != 0){
+    paste0("File mh_unique_clusters_", format(Sys.Date(), "%d%b%Y"),".csv created")
+  }
 
 # Join old CLUSTER groupings with new CLUSTER groupings ####
 # Merge old and new CLUSTERS into unique_clusters data frame 

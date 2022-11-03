@@ -55,6 +55,11 @@ new_sector_clusters <- mh_newvar %>%
     write_csv(new_sector_clusters, 
               here('data/interim/sector_clusters', paste0("mh_sector_clusters_", format(Sys.Date(), "%d%b%Y"),".csv")))
   }
+  
+  # Alert the user that new clusters were created
+  if(nrow(new_sector_clusters) != 0){
+    paste0("File mh_sector_clusters_", format(Sys.Date(), "%d%b%Y"),".csv created")
+  }
 
   # Merge old and new sector groupings into unique_sector_clusters data frame ####
   unique_sector_clusters <- rbind(existing_sector_clusters, new_sector_clusters)
