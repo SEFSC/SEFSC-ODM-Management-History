@@ -62,8 +62,7 @@ area_xref <- read_sheet("https://docs.google.com/spreadsheets/d/1T7tlLr2wWkwJdRC
     select(ZONE, ZONE_USE)
 
   # CHECK: Run crosschecks to compare ZONE names between mh_sect_expanded and Google Sheet
-  # NOTE: ZONE clean up is only complete for GULF REEF FMP so far
-  # Are all MH ZONE names in Google Sheet (BLANK if yes)?
+  # Are all MH ZONE names in Google Sheet (BLANK if yes)
   unique(mh_sect_expanded2$ZONE)[unique(mh_sect_expanded2$ZONE) %in% area_xref$ZONE == FALSE]
   # Are all Google Sheet ZONE names in MH (BLANK if yes)?
   area_xref$ZONE[area_xref$ZONE %in% mh_sect_expanded2$ZONE == FALSE]
