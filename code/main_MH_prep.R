@@ -2,7 +2,7 @@
 
 # Load packages ####
 #install.packages("librarian")
-librarian::shelf(here, tidyverse, googlesheets4)
+librarian::shelf(here, tidyverse)
 
 # Suppress summarize info ####
 options(dplyr.summarize.inform = FALSE)
@@ -19,11 +19,6 @@ if (!dir.exists(here("data", "interim"))){ dir.create(here("data", "interim")) }
 if (!dir.exists(here("data", "interim", "sector_clusters"))){ dir.create(here("data", "interim", "sector_clusters")) }
 if (!dir.exists(here("data", "interim", "clusters"))){ dir.create(here("data", "interim", "clusters")) }
 if (!dir.exists(here("data", "processed"))){ dir.create(here("data", "processed")) }
-
-# Authenticate email ####
-# For accessing tables as Google sheets, need to authenticate email address
-googlesheets4::gs4_auth()
-1
 
 # Define end of time series ####
 end_timeseries =  as.Date("2021-12-31", "%Y-%m-%d")
