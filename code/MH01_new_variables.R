@@ -19,7 +19,9 @@ mh_sect_expanded <- mh_cleaned %>%
 
 # Add "DETAILED" YES/NO field (from Google Sheets) based on MANAGEMENT_TYPE ####
 # Read in Google Sheet with table outlining whether a MANAGEMENT_TYPE is detailed (Y/N)
-detailed_xref <- read_sheet("https://docs.google.com/spreadsheets/d/1PViPVtqkY3q1fWUFGZm1UyIIYrFxt-YDitEUGaHBjsg/edit#gid=1115852389") %>%
+detailed_xref <- read.csv(here('data/raw', "mtype_detailed_xref.csv"),
+                          stringsAsFactors = FALSE,
+                          fileEncoding = 'Windows-1252') %>%
   select(-MANAGEMENT_CATEGORY)
 
   # CHECK: Run crosschecks to assess if all MH MANAGEMENT_TYPE classifications have been accounted for 
@@ -55,7 +57,9 @@ detailed_xref <- read_sheet("https://docs.google.com/spreadsheets/d/1PViPVtqkY3q
 # Translate from old ZONE names to new ZONE names (from Google Sheets) ####
 # Read in Google Sheets that outlines new ZONE names for all FMPs
 # These ZONEs were cleaned up for consistency
-area_xref <- read_sheet("https://docs.google.com/spreadsheets/d/1T7tlLr2wWkwJdRCbanKQ-N6zueymLJ_SsZAqjl1e-TA/edit#gid=0") %>%
+area_xref <- read.csv(here('data/raw', "zone_name_xref.csv"),
+                      stringsAsFactors = FALSE,
+                      fileEncoding = 'Windows-1252') %>%
   # Create single variable for ZONE_USE
     mutate(ZONE_USE = case_when(is.na(NEW_ZONE_NAME) ~ ZONE,
                                 TRUE ~ NEW_ZONE_NAME)) %>%
