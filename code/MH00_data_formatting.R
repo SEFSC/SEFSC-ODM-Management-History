@@ -30,4 +30,8 @@ mh_cleaned <- mh %>%
   # Remove A or B in FR Citation (example regulation ID = 11514)
   mutate(FR_CITATION = str_remove(FR_CITATION, " [AB]")) %>%
   # Remove report data bug variable
-  select(-REPORT_A_DATA_BUG)
+  select(-REPORT_A_DATA_BUG) %>%
+  # Add code for getting zone name for 3 regulations that are not getting fixed in the database
+  # Sarina created data bugs to update the data, but the change was not reflected
+  mutate(ZONE = case_when(REGULATION_ID %in% c(11537, 11538, 11539) ~ "SMZ - PA - 04 RON MCMANUS MEMORIAL REEF",
+                          TRUE ~ ZONE)) 
