@@ -13,7 +13,7 @@ mh <- read.csv(here('data/raw', "MH_DOWNLOAD_OCT_26_2022.csv"),
                             "END_YEAR" = "numeric"),
                # Added on 10/26/2022 because of a specific issue in how Sarina & Adyan's Rstudio reads in the csv file
                # For some reason Adyan had all hyphens from species groups re coded to "\x97"
-               encoding = 'latin1')
+               fileEncoding = 'Windows-1252')
 
 # Reformat data frame for date formats and NAs
 mh_cleaned <- mh %>%
