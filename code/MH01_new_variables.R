@@ -19,7 +19,9 @@ mh_sect_expanded <- mh_cleaned %>%
 
 # Add "DETAILED" YES/NO field (from Google Sheets) based on MANAGEMENT_TYPE ####
 # Read in Google Sheet with table outlining whether a MANAGEMENT_TYPE is detailed (Y/N)
-detailed_xref <- read_sheet("https://docs.google.com/spreadsheets/d/1PViPVtqkY3q1fWUFGZm1UyIIYrFxt-YDitEUGaHBjsg/edit#gid=1115852389") %>%
+detailed_xref <- read.csv(here('data/raw', "mtype_detailed_xref.csv"),
+                          stringsAsFactors = FALSE,
+                          fileEncoding = 'Windows-1252') %>%
   select(-MANAGEMENT_CATEGORY)
 
   # CHECK: Run crosschecks to assess if all MH MANAGEMENT_TYPE classifications have been accounted for 
@@ -53,20 +55,24 @@ detailed_xref <- read_sheet("https://docs.google.com/spreadsheets/d/1PViPVtqkY3q
   nrow(mh_sect_expanded) == nrow(mh_sect_expanded2)
 
 # Translate from old ZONE names to new ZONE names (from Google Sheets) ####
-# Read in Google Sheets that outlines new ZONE names for Gulf Reef Fish
-# These ZONEs were cleaned up for consistency and are outlined by species information and sector
-area_xref <- read_sheet("https://docs.google.com/spreadsheets/d/1gVFz6UUiN5LU3Fr9NuFSumKGeHvRubgZviJt7R73Gvg/edit#gid=0") %>%
-  mutate_all(.funs = toupper) %>%
-  # CHECK: Compare NEW_ZONE_NAME to the OLD_ZONE_NAME provided in the Google Sheets to avoid duplication
-  select(OLD_ZONE_NAME, NEW_ZONE_NAME) %>%
-  unique()
+# Read in Google Sheets that outlines new ZONE names for all FMPs
+# These ZONEs were cleaned up for consistency
+area_xref <- read.csv(here('data/raw', "zone_name_xref.csv"),
+                      stringsAsFactors = FALSE,
+                      fileEncoding = 'Windows-1252') %>%
+  # Create single variable for ZONE_USE
+    mutate(ZONE_USE = case_when(NEW_ZONE_NAME == "" ~ ZONE,
+                                TRUE ~ NEW_ZONE_NAME)) %>%
+    select(ZONE, ZONE_USE)
 
   # CHECK: Run crosschecks to compare ZONE names between mh_sect_expanded and Google Sheet
-  # NOTE: ZONE clean up is only complete for GULF REEF FMP so far
-  # Are all MH ZONE names in Google Sheet (BLANK if yes)?
-  unique(mh_sect_expanded2$ZONE)[unique(mh_sect_expanded2$ZONE) %in% area_xref$OLD_ZONE_NAME == FALSE]
+  # Are all MH ZONE names in Google Sheet (BLANK if yes)
+  unique(mh_sect_expanded2$ZONE)[unique(mh_sect_expanded2$ZONE) %in% area_xref$ZONE == FALSE]
   # Are all Google Sheet ZONE names in MH (BLANK if yes)?
-  area_xref$OLD_ZONE_NAME[area_xref$OLD_ZONE_NAME %in% mh_sect_expanded2$ZONE == FALSE]
+  area_xref$ZONE[area_xref$ZONE %in% mh_sect_expanded2$ZONE == FALSE]
+  # CHECK: How many zones were consolidated after the cleanup
+  n_distinct(mh_sect_expanded2$ZONE)
+  n_distinct(area_xref$ZONE_USE)
 
   # Standardize ZONE names
   # Results in mh_setup data frame
@@ -74,15 +80,7 @@ area_xref <- read_sheet("https://docs.google.com/spreadsheets/d/1gVFz6UUiN5LU3Fr
   # This step is performed after the sector expansion and before the species expansion
   # because the species list contains duplicates which are addressed later in the mh_spp_expansion.R script
   mh_setup <- mh_sect_expanded2 %>%
-    left_join(area_xref, by = c("ZONE" = "OLD_ZONE_NAME")) %>%
-    rename(ZONE_USE = "NEW_ZONE_NAME") %>%
-    # Since the cross reference table only cleans Gulf Reef Fish ZONES,
-    # replace all NAs with the original ZONE name outlined in the raw data
-    mutate(ZONE_USE = case_when(is.na(ZONE_USE) ~ ZONE,
-                                TRUE ~ ZONE_USE)) %>%
-    # Remove commas (TRY NOT TO USE COMMAS IN ODM)
-    mutate(ZONE_USE = gsub(",", "", ZONE_USE))
-
+    left_join(area_xref, by = c("ZONE" = "ZONE")) 
 
 # Create various new variables for processing ####
 # Results in the mh_newvar data frame

@@ -1,6 +1,9 @@
 # Script 2
 # Create Sector IDs and Address SECTOR forks by expanding SUBSECTOR information
 
+# Suppress summarize info ####
+options(dplyr.summarise.inform = FALSE)
+
 # Overview: ####
   # Define matching variables for sector groupings to create SECTOR_ID
   # Read in files with existing SECTOR_ID 
@@ -25,25 +28,37 @@ sector.match <- c("MANAGEMENT_TYPE_USE",
 
   # Read in and combine sector_id_files with existing_sector_clusters
   # This step combines any new sector_id_files with old sector groupings outlined in existing_sector_clusters
-  existing_sector_clusters <- sector_id_files %>%
-    map(read_csv) %>% 
-    reduce(rbind)
+  if(length(sector_id_files) > 0) {
+    existing_sector_clusters <- sector_id_files %>%
+      map(read_csv) %>% 
+      reduce(rbind)
+  } else {
+    existing_sector_clusters <- mh_newvar %>%
+      select(one_of(sector.match)) %>%
+      filter(FMP == "") %>%
+      add_column(SECTOR_ID = NA)
+  }
 
   # CHECK: Get starting number of existing sector groupings for reference
-  clusters_max = max(existing_sector_clusters$SECTOR_ID)
+  sector_max = max(c(existing_sector_clusters$SECTOR_ID, 0))
 
 # Create new SECTOR_ID for new files ####
 # CREATE: Assign numbers (SECTOR_ID) to any new sector groupings based on newly downloaded data
 new_sector_clusters <- mh_newvar %>%
   select(one_of(sector.match)) %>%
   distinct() %>%
-  anti_join(existing_sector_clusters) %>%
-  mutate(SECTOR_ID = (1:n() + clusters_max)[seq_len(nrow(.))])
+  anti_join(existing_sector_clusters, by = c("MANAGEMENT_TYPE_USE", "JURISDICTION", "JURISDICTIONAL_WATERS", "FMP", "SECTOR_USE", "REGION", "SPP_NAME")) %>%
+  mutate(SECTOR_ID = (1:n() + sector_max)[seq_len(nrow(.))])
 
   # WRITE: export new sector groupings into mh_sector_clusters_ CSV 
   if(length(new_sector_clusters$SECTOR_ID) > 0) {
     write_csv(new_sector_clusters, 
               here('data/interim/sector_clusters', paste0("mh_sector_clusters_", format(Sys.Date(), "%d%b%Y"),".csv")))
+  }
+  
+  # Alert the user that new clusters were created
+  if(nrow(new_sector_clusters) != 0){
+    paste0("File mh_sector_clusters_", format(Sys.Date(), "%d%b%Y"),".csv created")
   }
 
   # Merge old and new sector groupings into unique_sector_clusters data frame ####
@@ -135,3 +150,5 @@ mh_subsect_expanded <- left_join(mh_sector_id, expansions, by = c("SECTOR_USE", 
                                    TRUE ~ SUBSECTOR)) %>%
   # Expand SUBSECTOR_USE at the commas
   separate_rows(SUBSECTOR_USE, sep = ", ")
+
+  
