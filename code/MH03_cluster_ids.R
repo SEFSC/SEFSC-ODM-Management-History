@@ -72,7 +72,7 @@ unique_clusters <- rbind(existing_clusters, new_clusters)
 # CREATE: the variable of MULTI_REG to flag cases when there multiple records per FR_CITATION within the same 
 # CLUSTER that are effective at the same time
 multi_reg <- mh_prep %>%
-  group_by(CLUSTER, FR_CITATION) %>%
+  group_by(CLUSTER, FR_CITATION, ZONE_USE) %>%
   summarize(MULTI_REG = as.numeric(duplicated(FR_CITATION))) %>%
   filter(MULTI_REG == 1) %>%
   data.frame() %>%
@@ -83,7 +83,7 @@ dim(multi_reg)
   # Results in mh_cluster_ids data frame 
   mh_cluster_ids <- mh_prep %>%
     # Identify regulations that are MULTI_REG (same FR_NOTICE within a CLUSTER)
-    left_join(., multi_reg, by = c("FR_CITATION", "CLUSTER")) %>%
+    left_join(., multi_reg, by = c("FR_CITATION", "CLUSTER", "ZONE_USE")) %>%
     # Replace all NAs with 0
     mutate_at("MULTI_REG", ~replace(., is.na(.), 0)) %>%
     # CHECK: Does this CLUSTER have any instances of a MULTI_REG?
