@@ -61,7 +61,7 @@ area_xref <- read.csv(here('data/raw', "zone_name_xref.csv"),
                       stringsAsFactors = FALSE,
                       fileEncoding = 'Windows-1252') %>%
   # Create single variable for ZONE_USE
-    mutate(ZONE_USE = case_when(is.na(NEW_ZONE_NAME) ~ ZONE,
+    mutate(ZONE_USE = case_when(NEW_ZONE_NAME == "" ~ ZONE,
                                 TRUE ~ NEW_ZONE_NAME)) %>%
     select(ZONE, ZONE_USE)
 
