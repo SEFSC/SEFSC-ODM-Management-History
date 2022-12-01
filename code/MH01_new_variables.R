@@ -18,7 +18,7 @@ mh_sect_expanded <- mh_cleaned %>%
   separate_rows(SECTOR_USE)
 
 # Add "DETAILED" YES/NO field (from Google Sheets) based on MANAGEMENT_TYPE ####
-# Read in Google Sheet with table outlining whether a MANAGEMENT_TYPE is detailed (Y/N)
+# Read in file outlining whether a MANAGEMENT_TYPE is detailed (Y/N)
 detailed_xref <- read.csv(here('data/raw', "mtype_detailed_xref.csv"),
                           stringsAsFactors = FALSE,
                           fileEncoding = 'Windows-1252') %>%
@@ -54,8 +54,8 @@ detailed_xref <- read.csv(here('data/raw', "mtype_detailed_xref.csv"),
   n_distinct(mh_sect_expanded$REGULATION_ID) == n_distinct(mh_sect_expanded2$REGULATION_ID)
   nrow(mh_sect_expanded) == nrow(mh_sect_expanded2)
 
-# Translate from old ZONE names to new ZONE names (from Google Sheets) ####
-# Read in Google Sheets that outlines new ZONE names for all FMPs
+# Translate from old ZONE names to new ZONE names ####
+# Read in file that outlines new ZONE names for all FMPs
 # These ZONEs were cleaned up for consistency
 area_xref <- read.csv(here('data/raw', "zone_name_xref.csv"),
                       stringsAsFactors = FALSE,
