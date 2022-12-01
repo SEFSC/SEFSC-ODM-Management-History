@@ -82,6 +82,10 @@ area_xref <- read.csv(here('data/raw', "zone_name_xref.csv"),
   mh_setup <- mh_sect_expanded2 %>%
     left_join(area_xref, by = c("ZONE" = "ZONE")) 
 
+# Convert day of the week into numbers so we can subtract days of the week from each other
+
+  
+  
 # Create various new variables for processing ####
 # Results in the mh_newvar data frame
 # CREATE: the variables of vol, page, MANAGEMENT_TYPE_USE, ADJUSTMENT, MANAGEMENT_STATUS_USE, REG_REMOVED
@@ -150,9 +154,14 @@ mh_newvar <- mh_setup %>%
          # the regulation will be in effect for the entirety of that day.
          START_DATE = case_when(START_TIME == "11:59:00 PM" ~ START_DATE + 1,
                                 TRUE ~ START_DATE),
-         # For records meeting the requirement above, the START_TIME should be adjusted as well so we know we addressed the time issue
-         # This will be reflected in a new_start_time field
-         NEW_START_TIME = case_when(START_TIME != "11:59:00 PM" ~ START_TIME),
+         # Adjust the start day, time, and day of the week accordingly so when those fields are used for recurring 
+         # the individual fields will be consistent
+         START_DAY_USE = case_when(START_TIME == "11:59:00 PM" & !is.na(START_DAY) ~ START_DAY + 1,
+                                   TRUE ~ START_DAY),
+         # For start time, we remove the start time when "11:59:00 PM" because a null assumes the full day
+         START_TIME_USE = case_when(START_TIME != "11:59:00 PM" ~ START_TIME),
+         START_DAY_OF_WEEK_USE = case_when(START_TIME == "11:59:00 PM" & !is.na(START_DAY_OF_WEEK) ~ START_DAY_OF_WEEK,
+                                           TRUE ~ START_DAY_OF_WEEK),
          
          # CREATE: END_DATE from the END_DAY, END_MONTH, and END_YEAR fields
          # The END_DATE field is only created using END_DAY, END_MONTH, and END_YEAR when
@@ -166,17 +175,14 @@ mh_newvar <- mh_setup %>%
          # This will infer that the regulation remained in place through the end of that day and not one minute into the next day.
          END_DATE = case_when(END_TIME == "12:01:00 AM" ~ END_DATE - 1,
                               TRUE ~ END_DATE),
-         # When the END_TIME is listed as "12:01:00 AM", the STATUS_TYPE is RECURRING, and the END_DAY is not equal to 1, 
-         # the END_DAY should be reverted to one day prior. This will infer that the regulation remained in place through
-         # the end of that day and not one minute into the next day.
-         # This will be reflected in a new_end_day field
-         NEW_END_DAY = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ END_DAY - 1,
+         # Adjust the end day, time, and day of the week accordingly so when those fields are used for recurring 
+         # the individual fields will be consistent
+         END_DAY_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ END_DAY - 1,
                              TRUE ~ END_DAY),
-         # For records meeting the same requirements as above, the END_TIME should be removed since the END_DAY has been
-         # reverted to the day prior.
-         # This will be reflected in a new_end_time field
-         NEW_END_TIME = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ "11:59:00 PM",
+         END_TIME_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ "11:59:00 PM",
                               TRUE ~ END_TIME),
-         # For records meeting the requirement above, the END_TIME should be removed since the END_DATE has been reverted
-         # to the day prior.
-         NEW_END_TIME = case_when(NEW_END_TIME != "12:01:00 AM" ~ END_TIME)) 
+         # When the END_TIME is listed as "12:01:00 AM" and the end day of the week is not missing then revert to one day prior
+         END_DAY_OF_WEEK_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ END_DAY_OF_WEEK,
+                                         TRUE ~ END_DAY_OF_WEEK))
+  
+
