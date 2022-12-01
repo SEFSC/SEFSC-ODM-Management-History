@@ -133,42 +133,50 @@ mh_newvar <- mh_setup %>%
          # CREATE: END_MONTH_RECURRING = case_when(STATUS_TYPE == "RECURRING" ~ END_MONTH),
          # CREATE: END_TIME_RECURRING = case_when(STATUS_TYPE == "RECURRING" ~ END_TIME),
          # CREATE: END_DAY_OF_WEEK_RECURRING = case_when(STATUS_TYPE == "RECURRING" ~ END_DAY_OF_WEEK),
+         
+         
          # CREATE: START_DATE from the START_DAY, START_MONTH, and START_YEAR fields
-         # The START_DATE field is only created when START_DAY, START_MONTH, and START_YEAR are provided and different from EFFECTIVE_DATE 
-         # CREATE: END_DATE from the END_DAY, END_MONTH, and END_YEAR fields
-         # The END_DATE field is only created when END_DAY, END_MONTH, and END_YEAR are provided and different from INEFFECTIVE_DATE
+         # The START_DATE field is only created using START_DAY, START_MONTH, and START_YEAR when
+         # all three start day, month, year fields are provided and the management status is ONCE
          START_DATE = case_when(MANAGEMENT_STATUS_USE == "ONCE" &
                                   !is.na(START_DAY) &
                                   !is.na(START_MONTH) &
                                   !is.na(START_YEAR) ~ as.Date(paste(START_MONTH, START_DAY, START_YEAR, sep = "/"), "%m/%d/%Y"),
                                 TRUE ~ EFFECTIVE_DATE),
+         # Adjust the start date if its after the effective date so the start date = effective date
          START_DATE = case_when(START_DATE < EFFECTIVE_DATE ~ EFFECTIVE_DATE,
                                 TRUE ~ START_DATE),
+         # When the START_TIME is equal to "11:59:00 PM", the START_DATE should be pushed ahead by one day since
+         # the regulation will be in effect for the entirety of that day.
+         START_DATE = case_when(START_TIME == "11:59:00 PM" ~ START_DATE + 1,
+                                TRUE ~ START_DATE),
+         # For records meeting the requirement above, the START_TIME should be adjusted as well so we know we addressed the time issue
+         # This will be reflected in a new_start_time field
+         NEW_START_TIME = case_when(START_TIME != "11:59:00 PM" ~ START_TIME),
+         
+         # CREATE: END_DATE from the END_DAY, END_MONTH, and END_YEAR fields
+         # The END_DATE field is only created using END_DAY, END_MONTH, and END_YEAR when
+         # all end year, month, day fields are provided and and the management status is ONCE
          END_DATE = case_when(MANAGEMENT_STATUS_USE == "ONCE" &
                                 !is.na(END_DAY) &
                                 !is.na(END_MONTH) &
                                 !is.na(END_YEAR) ~ as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y"),
                               TRUE ~ INEFFECTIVE_DATE),
-         # When the END_TIME is listed as "12:01:00 AM", the STATUS_TYPE is RECURRING, and the END_DAY is not equal to 1, 
-         # the END_DAY should be reverted to one day prior. This will infer that the regulation remained in place through
-         # the end of that day and not one minute into the next day.
-         END_DAY = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ END_DAY - 1,
-                             TRUE ~ END_DAY),
-         # For records meeting the same requirements as above, the END_TIME should be removed since the END_DATE has been
-         # reverted to the day prior.
-         END_TIME = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ "11:59:00 PM",
-                              TRUE ~ END_TIME),
-         # When the START_TIME is equal to "11:59:00 PM", the START_DATE should be pushed ahead by one day since
-         # the regulation will be in effect for the entirety of that day.
-         START_DATE = case_when(START_TIME == "11:59:00 PM" ~ START_DATE + 1,
-                                TRUE ~ START_DATE),
-         # For records meeting the requirement above, the START_TIME should be removed since the START_DATE has been pushed
-         # to the next day.
-         START_TIME = case_when(START_TIME != "11:59:00 PM" ~ START_TIME),
          # For records with an END_TIME of "12:01:00 AM", the END_DATE should be reverted to one day prior.
          # This will infer that the regulation remained in place through the end of that day and not one minute into the next day.
          END_DATE = case_when(END_TIME == "12:01:00 AM" ~ END_DATE - 1,
-                                TRUE ~ END_DATE),
+                              TRUE ~ END_DATE),
+         # When the END_TIME is listed as "12:01:00 AM", the STATUS_TYPE is RECURRING, and the END_DAY is not equal to 1, 
+         # the END_DAY should be reverted to one day prior. This will infer that the regulation remained in place through
+         # the end of that day and not one minute into the next day.
+         # This will be reflected in a new_end_day field
+         NEW_END_DAY = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ END_DAY - 1,
+                             TRUE ~ END_DAY),
+         # For records meeting the same requirements as above, the END_TIME should be removed since the END_DAY has been
+         # reverted to the day prior.
+         # This will be reflected in a new_end_time field
+         NEW_END_TIME = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ "11:59:00 PM",
+                              TRUE ~ END_TIME),
          # For records meeting the requirement above, the END_TIME should be removed since the END_DATE has been reverted
          # to the day prior.
-         END_TIME = case_when(END_TIME != "12:01:00 AM" ~ END_TIME)) 
+         NEW_END_TIME = case_when(NEW_END_TIME != "12:01:00 AM" ~ END_TIME)) 
