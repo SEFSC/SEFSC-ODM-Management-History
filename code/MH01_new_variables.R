@@ -81,10 +81,6 @@ area_xref <- read.csv(here('data/raw', "zone_name_xref.csv"),
   # because the species list contains duplicates which are addressed later in the mh_spp_expansion.R script
   mh_setup <- mh_sect_expanded2 %>%
     left_join(area_xref, by = c("ZONE" = "ZONE")) 
-
-# Convert day of the week into numbers so we can subtract days of the week from each other
-
-  
   
 # Create various new variables for processing ####
 # Results in the mh_newvar data frame
@@ -138,7 +134,13 @@ mh_newvar <- mh_setup %>%
          # CREATE: END_TIME_RECURRING = case_when(STATUS_TYPE == "RECURRING" ~ END_TIME),
          # CREATE: END_DAY_OF_WEEK_RECURRING = case_when(STATUS_TYPE == "RECURRING" ~ END_DAY_OF_WEEK),
          
-         
+         # Format start and end day of week as ordered factors
+         START_DAY_OF_WEEK = factor(START_DAY_OF_WEEK, levels = c("MONDAY", "TUESDAY", "WEDNESDAY", 
+                                                  "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"),
+                                    ordered = TRUE),
+         END_DAY_OF_WEEK = factor(END_DAY_OF_WEEK, levels = c("MONDAY", "TUESDAY", "WEDNESDAY", 
+                                                                  "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"),
+                                    ordered = TRUE),
          # CREATE: START_DATE from the START_DAY, START_MONTH, and START_YEAR fields
          # The START_DATE field is only created using START_DAY, START_MONTH, and START_YEAR when
          # all three start day, month, year fields are provided and the management status is ONCE
