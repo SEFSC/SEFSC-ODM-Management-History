@@ -141,6 +141,9 @@ mh_newvar <- mh_setup %>%
          END_DAY_OF_WEEK = factor(END_DAY_OF_WEEK, levels = c("MONDAY", "TUESDAY", "WEDNESDAY", 
                                                                   "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"),
                                     ordered = TRUE),
+         # Format start and end day of week as numeric
+         START_DAY_OF_WEEK = as.numeric(START_DAY_OF_WEEK),
+         END_DAY_OF_WEEK = as.numeric(END_DAY_OF_WEEK),
          # CREATE: START_DATE from the START_DAY, START_MONTH, and START_YEAR fields
          # The START_DATE field is only created using START_DAY, START_MONTH, and START_YEAR when
          # all three start day, month, year fields are provided and the management status is ONCE
@@ -162,7 +165,7 @@ mh_newvar <- mh_setup %>%
                                    TRUE ~ START_DAY),
          # For start time, we remove the start time when "11:59:00 PM" because a null assumes the full day
          START_TIME_USE = case_when(START_TIME != "11:59:00 PM" ~ START_TIME),
-         START_DAY_OF_WEEK_USE = case_when(START_TIME == "11:59:00 PM" & !is.na(START_DAY_OF_WEEK) ~ START_DAY_OF_WEEK,
+         START_DAY_OF_WEEK_USE = case_when(START_TIME == "11:59:00 PM" & !is.na(START_DAY_OF_WEEK) ~ START_DAY_OF_WEEK + 1,
                                            TRUE ~ START_DAY_OF_WEEK),
          
          # CREATE: END_DATE from the END_DAY, END_MONTH, and END_YEAR fields
@@ -184,7 +187,17 @@ mh_newvar <- mh_setup %>%
          END_TIME_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ "11:59:00 PM",
                               TRUE ~ END_TIME),
          # When the END_TIME is listed as "12:01:00 AM" and the end day of the week is not missing then revert to one day prior
-         END_DAY_OF_WEEK_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ END_DAY_OF_WEEK,
-                                         TRUE ~ END_DAY_OF_WEEK))
-  
-
+         END_DAY_OF_WEEK_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ END_DAY_OF_WEEK - 1,
+                                         TRUE ~ END_DAY_OF_WEEK),
+         # Format start and end day of week use to deal with 0 and 8 of 7 level factor
+         START_DAY_OF_WEEK_USE = case_when(START_DAY_OF_WEEK_USE == 8 ~ 1,
+                                           TRUE ~ START_DAY_OF_WEEK_USE),
+         END_DAY_OF_WEEK_USE = case_when(END_DAY_OF_WEEK_USE == 0 ~ 7,
+                                         TRUE ~ END_DAY_OF_WEEK_USE),
+         # Format start and end day of week use as ordered factors
+         START_DAY_OF_WEEK_USE = recode_factor(START_DAY_OF_WEEK_USE,
+                                               `1` = "MONDAY", `2` = "TUESDAY", `3` = "WEDNESDAY", 
+                                               `4` = "THURSDAY", `5` = "FRIDAY", `6` = "SATURDAY", `7` = "SUNDAY"),
+         END_DAY_OF_WEEK_USE = recode_factor(END_DAY_OF_WEEK_USE,
+                                             `1` = "MONDAY", `2` = "TUESDAY", `3` = "WEDNESDAY", 
+                                             `4` = "THURSDAY", `5` = "FRIDAY", `6` = "SATURDAY", `7` = "SUNDAY"))
