@@ -54,4 +54,8 @@ source(here('code', 'MH04_dates.R'))
 
 # 5: Species expansion and clean up dates ####
 # Data frame result: mh_expanded 
+# Data frame result: mh_analysis_ready (includes only variables of interest and simple clusters (no multi-reg for now))
 source(here('code', 'MH05_spp_expansion.R'))
+
+# Save environment as .Rdata file for testing against a static result
+save.image(here("data", "processed", paste0('./MH_AL_', format(Sys.Date(), "%Y%b%d"), '.RData')))
