@@ -16,5 +16,15 @@ myfile = latest_file(fpattern="MH_AL.*RData", fpath=here("data", "processed"))
 load(myfile)
 
 # Create most recent analysis-ready dataset for the clusters in the test dataset
+mynew_analysis_ready <- mh_analysis_ready %>%
+  filter(CLUSTER %in% test$CLUSTER) %>%
+  arrange(CLUSTER, ZONE_USE, START_DATE2)
 
-
+# Compare
+librarian::shelf(compareDF)
+# Compare by cluster ID
+# If you get the error message:
+  # Error in stop_or_warn("The two data frames are the same!", stop_on_error) : 
+  # The two data frames are the same!
+# THAT"S A GOOD THING
+result <- compare_df(mynew_analysis_ready, test, c("CLUSTER"))
