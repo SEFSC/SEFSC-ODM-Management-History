@@ -128,15 +128,15 @@ mh_dates <- mh_reversions %>%
          # If a record doesn't have a START_TIME diff should be adjusted by -1 (one day prior) 
          # This indicates that the regulation started at start of the START_DAY listed and 
          # ended the day before the next regulation started (day before START_DAY of subsequent regulation)
-         diff_days = case_when(is.na(lag(START_TIME)) ~ diff - 1, 
+         diff_days = case_when(is.na(lag(START_TIME_USE)) ~ diff - 1, 
                                # When START_TIME is "12:01:00 AM", diff should days should be lagged by one day
                                # This will infer that the regulation began at the start of the day, not one minute into the day
                                # This will help properly calculate diff_days
-                               lag(START_TIME) == "12:01:00 AM" ~ diff - 1,
+                               lag(START_TIME_USE) == "12:01:00 AM" ~ diff - 1,
                                # When START_TIME is "12:02:00 AM", diff should days should be lagged by one day
                                # This will infer that the regulation began at the start of the day, not two minutes into the day
                                # This will help properly calculate diff_days
-                               lag(START_TIME) == "12:02:00 AM" ~ diff - 1,
+                               lag(START_TIME_USE) == "12:02:00 AM" ~ diff - 1,
                                TRUE ~ diff),
          # CREATE: the variable of CHANGE_DATE to indicate when a regulation changed to the subsequent regulation (day before START_DATE_USE of subsequent regulation)
          # When diff_days is not calculated due to there being no subsequent regulation, 
