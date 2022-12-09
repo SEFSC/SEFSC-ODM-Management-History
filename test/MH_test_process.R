@@ -28,3 +28,9 @@ librarian::shelf(compareDF)
   # The two data frames are the same!
 # THAT"S A GOOD THING
 result <- compare_df(mynew_analysis_ready, test, c("CLUSTER"))
+
+# Visualize difference
+# A single cell is colored if it has changed across the two datasets. 
+# The value of the cell in the older dataset is colored red and the value of the cell in the newer dataset is colored green. 
+# Cells that haven't changed across the two datasets are colored grey.
+create_output_table(result)
