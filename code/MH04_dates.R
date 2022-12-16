@@ -108,7 +108,7 @@ mh_reversions = mh_dates_prep %>%
                                TRUE ~ FALSE))
 
   # CHECK: REGULATION_ID 927 to confirm that new variables are working correctly 
-  test = mh_reversions %>% filter(REGULATION_ID == "927")
+  chk_reg = mh_reversions %>% filter(REGULATION_ID == "927")
 
   
 # Create date related logic and overwrite end date as needed ####
