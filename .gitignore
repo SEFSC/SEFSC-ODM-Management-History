@@ -3,3 +3,5 @@
 
 # Processed and analysis-ready datasets
 processed/
+
+.Rhistory
