@@ -1,0 +1,72 @@
+library(gt)
+library(flextable)
+
+# Something is wrong with END_DATE on REVERSIONS
+# See line 6 in test
+# SCRIP 5 needs to use START_DAY_USE 
+# MULTI REG CANNOT BE DEFINED SEQUENTIALLY? 
+
+# ISSUE WITH DATE SHIFT - MANUAL REG LIST HAS 8/29 and 8/30
+# CODE HAS 8/28 and 8/28
+# REG ID 792
+
+test = mh_expanded %>%
+  filter(FMP %in% c("REEF FISH RESOURCES OF THE GULF OF MEXICO"),
+         SPP_NAME %in% c("SNAPPER, RED"),
+         MANAGEMENT_TYPE_USE == "MINIMUM SIZE LIMIT",
+         SECTOR_USE == "RECREATIONAL",
+         NEVER_IMPLEMENTED == 0) %>%
+  group_by(MANAGEMENT_TYPE_USE,
+           JURISDICTION, JURISDICTIONAL_WATERS, FMP,
+           SECTOR_USE, SUBSECTOR_USE, REGION,
+           SPP_NAME) %>%
+  select(REGULATION_ID, SECTOR_USE, REGION, ZONE_USE, 
+         START_DATE2, END_DATE2, diff_days, MULTI_REG,
+         VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE,
+         FR_CITATION, ACTION, ACTION_TYPE, 
+         MANAGEMENT_TYPE_USE,
+         JURISDICTION, JURISDICTIONAL_WATERS, FMP,
+         SECTOR_USE, SUBSECTOR_USE, REGION,
+         SPP_NAME)
+
+gt(test)
+
+mh_review <- mh_analysis_ready %>%
+  filter(FMP %in% c("REEF FISH RESOURCES OF THE GULF OF MEXICO"),
+         SPP_NAME %in% c("SNAPPER, RED")) %>%
+  group_by(MANAGEMENT_TYPE_USE,
+           JURISDICTION, JURISDICTIONAL_WATERS, FMP,
+           SECTOR_USE, SUBSECTOR_USE, REGION,
+           SPP_NAME) %>%
+  arrange(MANAGEMENT_TYPE_USE,
+          JURISDICTION, JURISDICTIONAL_WATERS, FMP,
+          SECTOR_USE, SUBSECTOR_USE, REGION,
+          SPP_NAME, START_DATE2)
+
+mh_print <- mh_analysis_ready %>%
+  filter(FMP %in% c("REEF FISH RESOURCES OF THE GULF OF MEXICO"),
+         SPP_NAME %in% c("SNAPPER, RED")) %>%
+  group_by(MANAGEMENT_TYPE_USE,
+           JURISDICTION, JURISDICTIONAL_WATERS, FMP,
+           SECTOR_USE, SUBSECTOR_USE, REGION,
+           SPP_NAME) %>%
+  select(SECTOR_USE, REGION, ZONE_USE, 
+         START_DATE2, EFFECTIVE_DATE, END_DATE2,
+         VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE,
+         FR_CITATION, ACTION, ACTION_TYPE, 
+         MANAGEMENT_TYPE_USE,
+         JURISDICTION, JURISDICTIONAL_WATERS, FMP,
+         SECTOR_USE, SUBSECTOR_USE, REGION,
+         SPP_NAME) %>%
+  arrange(START_DATE2)
+
+gt(mh_print)
+
+flextable(mh_print) %>%
+merge_v(c("SECTOR_USE", "REGION",
+          "ZONE_USE", 
+          "START_DATE2", "EFFECTIVE_DATE", "END_DATE2",
+          "VALUE", "VALUE_UNITS", "VALUE_TYPE", "VALUE_RATE",
+          "FR_CITATION", "ACTION", "ACTION_TYPE")) %>%
+  theme_box()
+        

@@ -89,18 +89,18 @@ mh_sp_expanded_n <- mh_dates %>%
 # REMOVED_SP_DATE indicates the date that the species was removed from the SPECIES_AGGREGATE or SPECIES_GROUP
 chk_spp <- mh_sp_expanded %>%
   ungroup() %>%
-  mutate(chk_spp = case_when(REMOVED_SP_DATE < START_DATE ~ 1,
-                             REMOVED_SP_DATE < END_DATE & REMOVED_SP_DATE > START_DATE ~ 2,
-                             ADDED_SP_DATE > START_DATE & END_DATE > ADDED_SP_DATE  ~ 3,
-                             ADDED_SP_DATE > START_DATE & END_DATE < ADDED_SP_DATE ~ 4,
-                             REMOVED_SP_DATE == START_DATE ~ 5,
-                             ADDED_SP_DATE > START_DATE ~ 6,
+  mutate(chk_spp = case_when(REMOVED_SP_DATE < START_DATE_USE ~ 1,
+                             REMOVED_SP_DATE < END_DATE & REMOVED_SP_DATE > START_DATE_USE ~ 2,
+                             ADDED_SP_DATE > START_DATE_USE & END_DATE > ADDED_SP_DATE  ~ 3,
+                             ADDED_SP_DATE > START_DATE_USE & END_DATE < ADDED_SP_DATE ~ 4,
+                             REMOVED_SP_DATE == START_DATE_USE ~ 5,
+                             ADDED_SP_DATE > START_DATE_USE ~ 6,
                              is.na(REMOVED_SP_DATE) ~ 6,
-                             ADDED_SP_DATE > START_DATE & REMOVED_SP_DATE < END_DATE ~ 6,
-                             ADDED_SP_DATE < START_DATE & END_DATE < REMOVED_SP_DATE ~ 6,
-                             ADDED_SP_DATE == START_DATE & END_DATE < REMOVED_SP_DATE ~ 6,
-                             ADDED_SP_DATE < START_DATE & REMOVED_SP_DATE == END_DATE ~ 6,
-                             ADDED_SP_DATE == START_DATE & REMOVED_SP_DATE == END_DATE ~ 6,
+                             ADDED_SP_DATE > START_DATE_USE & REMOVED_SP_DATE < END_DATE ~ 6,
+                             ADDED_SP_DATE < START_DATE_USE & END_DATE < REMOVED_SP_DATE ~ 6,
+                             ADDED_SP_DATE == START_DATE_USE & END_DATE < REMOVED_SP_DATE ~ 6,
+                             ADDED_SP_DATE < START_DATE_USE & REMOVED_SP_DATE == END_DATE ~ 6,
+                             ADDED_SP_DATE == START_DATE_USE & REMOVED_SP_DATE == END_DATE ~ 6,
                              TRUE ~ 0),
          # Assign associated explanation to each number
          chk_reason = case_when(chk_spp == 1 ~ 'spp removed before reg started',
@@ -112,7 +112,7 @@ chk_spp <- mh_sp_expanded %>%
                                 chk_spp == 0 ~ 'not considered')) %>%
   #filter(chk_spp != 0) %>%
   select(CLUSTER, REGULATION_ID, MANAGEMENT_TYPE, MANAGEMENT_TYPE_USE, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPECIES_ITIS_USE, COMMON_NAME_USE,
-         EFFECTIVE_DATE, INEFFECTIVE_DATE, ADDED_SP_DATE, REMOVED_SP_DATE, START_DATE, END_DATE,
+         EFFECTIVE_DATE, INEFFECTIVE_DATE, ADDED_SP_DATE, REMOVED_SP_DATE, START_DATE_USE, END_DATE,
          chk_spp, chk_reason)
 
   # CHECK: do all records fall under one of these categories
@@ -128,32 +128,32 @@ chk_spp <- mh_sp_expanded %>%
                                   chk_spp == 6 ~ 'no adjustment',
                                   chk_spp == 0 ~ 'manual check'))
 
-  # Adjust START_DATE and END_DATE information based on the ADDED_SP_DATE and REMOVED_SP_DATE
+  # Adjust START_DATE_USE and END_DATE information based on the ADDED_SP_DATE and REMOVED_SP_DATE
   # Results in the mh_expanded data frame
   mh_expanded <- mh_sp_expanded %>%
     # CREATE: the variable of RM_SPP (remove species) to indicate that the regulation does not apply to this species does not apply
     # A regulation does not apply to a particular species when:
-    # The REMOVED_SP_DATE occurs prior to the START_DATE of the regulation
-    # The ADDED_SP_DATE occurs after the START_DATE of the regulation and the END_DATE of the regulation is prior the the ADDED_SP_DATE
-    # The REMOVED_SP_DATE is equal to the START_DATE of the regulation
-    mutate(RM_SPP = case_when(REMOVED_SP_DATE < START_DATE ~ 1,
-                              ADDED_SP_DATE > START_DATE & END_DATE < ADDED_SP_DATE ~ 1,
-                              REMOVED_SP_DATE == START_DATE ~ 1,
+    # The REMOVED_SP_DATE occurs prior to the START_DATE_USE of the regulation
+    # The ADDED_SP_DATE occurs after the START_DATE_USE of the regulation and the END_DATE of the regulation is prior the the ADDED_SP_DATE
+    # The REMOVED_SP_DATE is equal to the START_DATE_USE of the regulation
+    mutate(RM_SPP = case_when(REMOVED_SP_DATE < START_DATE_USE ~ 1,
+                              ADDED_SP_DATE > START_DATE_USE & END_DATE < ADDED_SP_DATE ~ 1,
+                              REMOVED_SP_DATE == START_DATE_USE ~ 1,
                               TRUE ~ 0),
-           # CREATE: the variable of IMP_START_DATE (0 or 1 field) to flag cases where the START_DATE of the regulation should be adjusted
-           # The START_DATE should be adjusted when:
-           # The ADDED_SP_DATE is after the START_DATE of the regulation and the END_DATE of the regulation is after the ADDED_SP_DATE
-           IMP_START_DATE = case_when(ADDED_SP_DATE > START_DATE & END_DATE > ADDED_SP_DATE ~ 1,
+           # CREATE: the variable of IMP_START_DATE (0 or 1 field) to flag cases where the START_DATE_USE of the regulation should be adjusted
+           # The START_DATE_USE should be adjusted when:
+           # The ADDED_SP_DATE is after the START_DATE_USE of the regulation and the END_DATE of the regulation is after the ADDED_SP_DATE
+           IMP_START_DATE = case_when(ADDED_SP_DATE > START_DATE_USE & END_DATE > ADDED_SP_DATE ~ 1,
                                       TRUE ~ 0),
-           # CREATE: the variable of START_DATE2 to adjust the START_DATE accordingly
-           # When IMP_START_DATE is flagged (= 1) the ADDED_SP_DATE should be used as the START_DATE
-           # Otherwise the START_DATE should be used for START_DATE2
+           # CREATE: the variable of START_DATE2 to adjust the START_DATE_USE accordingly
+           # When IMP_START_DATE is flagged (= 1) the ADDED_SP_DATE should be used as the START_DATE_USE
+           # Otherwise the START_DATE_USE should be used for START_DATE2
            START_DATE2 = case_when(IMP_START_DATE == 1 ~ ADDED_SP_DATE,
-                                  TRUE ~ START_DATE),
+                                  TRUE ~ START_DATE_USE),
            # CREATE: the variable of IMP_END_DATE (0 or 1 field) to flag cases where the END_DATE of the regulation should be adjusted
            # The END_DATE should be adjusted when:
-           # The REMOVED_SP_DATE is prior to the END_DATE of the regulation and the REMOVED_SP_DATE is after the START_DATE of the regulation
-           IMP_END_DATE = case_when(REMOVED_SP_DATE < END_DATE & REMOVED_SP_DATE > START_DATE ~ 1,
+           # The REMOVED_SP_DATE is prior to the END_DATE of the regulation and the REMOVED_SP_DATE is after the START_DATE_USE of the regulation
+           IMP_END_DATE = case_when(REMOVED_SP_DATE < END_DATE & REMOVED_SP_DATE > START_DATE_USE ~ 1,
                                     TRUE ~ 0),
            # CREATE: the variable of END_DATE2 to adjust the END_DATE accordingly
            # When IMP_END_DATE is flagged (= 1) the REMOVED_SP_DATE should be used as the END_DATE
