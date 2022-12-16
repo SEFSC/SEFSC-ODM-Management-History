@@ -168,7 +168,7 @@ mh_dates <- mh_reversions %>%
          # When the MULTI_REG variable is flagged (1), NEVER_IMPLEMENTED should not be flagged (0) meaning the regulation did go into effect
          # When the diff_days variable is less than or equal to -1 and MULTI_REG is 0, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
          # When the START_DATE_USE is after the END_DATE, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
-         NEVER_IMPLEMENTED = case_when(MULTI_REG == 1 ~ 0,
+         NEVER_IMPLEMENTED = case_when(#MULTI_REG == 1 ~ 0,
                                        diff_days <= -1 ~ 1,
                                        START_DATE_USE > END_DATE ~ 1,
                                        TRUE ~ 0))
