@@ -163,7 +163,7 @@ chk_spp <- mh_sp_expanded %>%
 
 # Export data sets ####
 # Export mh_expanded
-write.csv(mh_expanded, here("data", "processed", paste0("mh_expanded_", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
+#write.csv(mh_expanded, here("data", "processed", paste0("mh_expanded_", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
 
   # Subset to fully processed component of mh_expanded
   # These components will not need to be removed one processing accommodates the necessary logic
@@ -185,5 +185,5 @@ write.csv(mh_expanded, here("data", "processed", paste0("mh_expanded_", format(S
            MULTI_REG, MULTI_REG_CLUSTER, REG_REMOVED, FLAG)
   
   # Export mh_analysis_ready
-  write.csv(mh_analysis_ready, here("data", "processed", paste0("mh_analysis_ready_", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
+  #write.csv(mh_analysis_ready, here("data", "processed", paste0("mh_analysis_ready_", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
   
