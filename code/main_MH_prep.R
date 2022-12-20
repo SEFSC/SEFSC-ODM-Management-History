@@ -30,7 +30,7 @@ end_timeseries =  as.Date("2021-12-31", "%Y-%m-%d")
   # To also better handle NA or null fields, the species data was transposed so that species_name_type indicates to original species field name
   # Name is the species aggregate, species group name, or when common name is ALL
   # The MH data set is also transposed to have a single common name field and no null values
-load(here('data/interim', 'MH_clean_spp_tables.RData'))
+sp_info_use = readRDS(here('data', 'interim', 'MH_clean_spp_tables.RDS'))
 
 # 0B: Data Formatting ####
   # Data frame result: mh_cleaned
@@ -58,4 +58,4 @@ source(here('code', 'MH04_dates.R'))
 source(here('code', 'MH05_spp_expansion.R'))
 
 # Save environment as .Rdata file for testing against a static result
-save.image(here("data", "processed", paste0('./MH_AL_', format(Sys.Date(), "%Y%b%d"), '.RData')))
+saveRDS(mh_analysis_ready, here("data", "processed", paste0('MH_AL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
