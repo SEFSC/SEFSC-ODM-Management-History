@@ -1,8 +1,12 @@
 # This script is intended to compare the previously ran MH procedure against a static analysis-ready dataset where we know the dates are correct
 
+# Load packages ####
+#install.packages("librarian")
+librarian::shelf(here, tidyverse, compareDF)
+
 # The test data to compare to is MH_test_data.Rdata
 # Load .Rdata file with test data set
-load(here('test', 'MH_test_data.RData'))
+test <- readRDS(here('test', 'MH_test_data.RDS'))
 
 # Load .Rdata file with most recent MH analysis ready data set
 # Function to select the file with most recent date
@@ -12,8 +16,8 @@ latest_file = function(fpattern, fpath) {
   rownames(f)[which.max(f$mtime)] 
 }
 # File with the most recent internal mtime
-myfile = latest_file(fpattern="MH_AL.*RData", fpath=here("data", "processed"))
-load(myfile)
+myfile = latest_file(fpattern="MH_AL.*RDS", fpath=here("data", "processed"))
+mh_analysis_ready <- readRDS(myfile)
 
 # Create most recent analysis-ready dataset for the clusters in the test dataset
 mynew_analysis_ready <- mh_analysis_ready %>%
@@ -21,7 +25,6 @@ mynew_analysis_ready <- mh_analysis_ready %>%
   arrange(CLUSTER, ZONE_USE, START_DATE2)
 
 # Compare
-librarian::shelf(compareDF)
 # Compare by cluster ID
 # If you get the error message:
   # Error in stop_or_warn("The two data frames are the same!", stop_on_error) : 
