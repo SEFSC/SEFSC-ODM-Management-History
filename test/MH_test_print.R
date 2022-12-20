@@ -1,6 +1,6 @@
 # Load packages ####
 #install.packages("librarian")
-librarian::shelf(here, tidyverse, gt, flextable)
+librarian::shelf(here, tidyverse, gt, flextable, officer)
 
 # RUN MH CODE
 here::i_am('test/MH_test_print.R')
