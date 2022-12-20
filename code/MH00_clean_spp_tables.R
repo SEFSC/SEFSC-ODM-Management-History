@@ -134,7 +134,5 @@ sp_info_use = bind_rows(fmp_info_use, grp_info_use, agg_info_use) %>%
 rm(con, spp_grp_view, spp_agg_view, spp_itis_xref)
 
 # Save work space
-save.image(here('data/interim', './MH_clean_spp_tables.RData'))
-
-
+saveRDS(sp_info_use, here('data', 'interim', 'MH_clean_spp_tables.RDS'))
 
