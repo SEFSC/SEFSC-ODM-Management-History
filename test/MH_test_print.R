@@ -1,13 +1,15 @@
-# Packages
-librarian::shelf(here, tidyverse, flextable, gt, officer)
+# Load packages ####
+#install.packages("librarian")
+librarian::shelf(here, tidyverse, gt, flextable)
 
-# Something is wrong with END_DATE on REVERSIONS
-# See line 6 in test
-# SCRIP 5 needs to use START_DAY_USE 
-# MULTI REG CANNOT BE DEFINED SEQUENTIALLY? 
+# RUN MH CODE
+here::i_am('test/MH_test_print.R')
+source(here('code', 'main_MH_prep.R'))
+
+# MULTI REG ONLY WORKS WHEN MONTH DAY AND YEAR START PROVIDED?
 
 # ISSUE WITH DATE SHIFT - MANUAL REG LIST HAS 8/29 and 8/30
-# CODE HAS 8/28 and 8/28
+# CODE HAS 8/28 and 8/29
 # REG ID 792
 
 test_tab = mh_expanded %>%
@@ -71,7 +73,7 @@ merge_v(c("SECTOR_USE", "REGION",
   theme_box()
 
 #####################################################################################
-# SFA ADDED CODE FOR AUTOMATING TABLES TO CHECK AGAINST SEDAR WORKING PAPERS
+# FORMAT TABLES TO MATCH SEDAR WORKING PAPERS FOR EASIER VISUAL CHECKING
 
 # Input parameters 
 spp = 'SNAPPER, RED'
