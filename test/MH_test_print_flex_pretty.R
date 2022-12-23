@@ -15,8 +15,8 @@ source(here('code', 'main_MH_prep.R'))
 # REG ID 792
 
 # Input parameters 
-spp = 'TRIGGERFISH, GRAY'
-fmp = 'SNAPPER-GROUPER FISHERY OF THE SOUTH ATLANTIC REGION'
+spp = 'SNAPPER, RED'
+fmp = "REEF FISH RESOURCES OF THE GULF OF MEXICO"
 
 # Table for Size limits
 tab_size <- mh_expanded %>%
@@ -113,7 +113,7 @@ tab_trip2 <- tab_trip %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste(tab_size$COMMON_NAME_USE)))
+       set_caption(paste(tab_trip$COMMON_NAME_USE)))
 for(i in 1:nrow(tab_trip2)) {
   print(tab_trip2$tab[[i]])
 }
@@ -162,7 +162,7 @@ tab_bag2 <- tab_bag %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste(tab_size$COMMON_NAME_USE)))
+       set_caption(paste(tab_bag$COMMON_NAME_USE)))
 for(i in 1:nrow(tab_bag2)) {
   print(tab_bag2$tab[[i]])
 }
@@ -174,17 +174,17 @@ tab_close_simple <- mh_expanded %>%
   filter(ZONE_USE == 'ALL') %>%
   ungroup() %>%
   mutate(START_YEAR = format(START_DATE2, "%Y"),
-         START_DATE3 = format(START_DATE2, "%m/%d/%Y"),
+         START_DATE3 = case_when(!is.na(START_TIME_USE) ~ paste0(format(START_DATE2, "%m/%d/%Y"), " ", START_TIME_USE),
+                                 TRUE ~ format(START_DATE2, "%m/%d/%Y")),
          END_YEAR = format(END_DATE2, "%Y"),
-         END_DATE3 = format(END_DATE2, "%m/%d/%Y"),
+         END_DATE3 = case_when(!is.na(END_TIME_USE) ~ paste0(format(END_DATE2, "%m/%d/%Y"), " ", END_TIME_USE),
+                               TRUE ~ format(END_DATE2, "%m/%d/%Y")),
          SECTOR2 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
          ZONE2 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
          VALUE2 = case_when(VALUE == 'CLOSE' ~ 'Closure',
                             VALUE == 'OPEN' ~ 'Reopening'),
          REG_TYPE = case_when(MANAGEMENT_STATUS_USE == 'ONCE' ~ str_to_title(VALUE2),
-                              TRUE ~ paste0(str_to_title(MANAGEMENT_STATUS_USE), " ", str_to_title(VALUE2))),
-         START_MONTH2 = format(as.Date(paste0("2021-", START_MONTH, "-01"), "%Y-%m-%d"), "%b"),
-         END_MONTH2 = format(as.Date(paste0("2021-", END_MONTH, "-01"), "%Y-%m-%d"), "%b")) %>%
+                              TRUE ~ paste0(str_to_title(MANAGEMENT_STATUS_USE), " ", str_to_title(VALUE2)))) %>%
   arrange(SECTOR_USE, ZONE2, START_DATE2) 
 tab_close_simple2 <- tab_close_simple %>%
   select(CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, SECTOR2, ZONE2, REG_TYPE, START_YEAR, START_DATE3, END_DATE3, FR_CITATION) %>%
@@ -207,7 +207,7 @@ tab_close_simple2 <- tab_close_simple %>%
        align(part = "all", align = "center") %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:6), width=0.9) %>%
-       set_caption(paste(tab_size$COMMON_NAME_USE)))
+       set_caption(paste(tab_close_simple$COMMON_NAME_USE)))
 for(i in 1:nrow(tab_close_simple2)) {
   print(tab_close_simple2$tab[[i]])
 }
@@ -263,7 +263,7 @@ tab_close_recur2 <- tab_close_recur %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste(tab_size$COMMON_NAME_USE)))
+       set_caption(paste(tab_close_recur$COMMON_NAME_USE)))
 for(i in 1:nrow(tab_close_recur2)) {
   print(tab_close_recur2$tab[[i]])
 }
@@ -324,7 +324,7 @@ tab_acl2 <- tab_acl %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste(tab_size$COMMON_NAME_USE)))
+       set_caption(paste(tab_acl$COMMON_NAME_USE)))
 for(i in 1:nrow(tab_acl2)) {
   print(tab_acl2$tab[[i]])
 }
