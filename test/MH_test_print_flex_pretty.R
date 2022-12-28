@@ -15,7 +15,7 @@ source(here('code', 'main_MH_prep.R'))
 # REG ID 792
 
 # Input parameters 
-spp = 'SNAPPER, RED'
+spp = 'AMBERJACK, GREATER'
 fmp = "REEF FISH RESOURCES OF THE GULF OF MEXICO"
 
 # Table for Size limits
@@ -62,7 +62,7 @@ tab_size2 <- tab_size %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste0(tab_size$COMMON_NAME_USE)))
+       set_caption(paste0(tab_size$REGION, " ", tab_size$COMMON_NAME_USE, " ", tab_size$MANAGEMENT_TYPE_USE)))
 for(i in 1:nrow(tab_size2)) {
   print(tab_size2$tab[[i]])
 }
@@ -113,7 +113,7 @@ tab_trip2 <- tab_trip %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste(tab_trip$COMMON_NAME_USE)))
+       set_caption(paste0(tab_trip$REGION, " ", tab_trip$COMMON_NAME_USE, " ", tab_trip$MANAGEMENT_TYPE_USE)))
 for(i in 1:nrow(tab_trip2)) {
   print(tab_trip2$tab[[i]])
 }
@@ -162,16 +162,28 @@ tab_bag2 <- tab_bag %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste(tab_bag$COMMON_NAME_USE)))
+       set_caption(paste0(tab_bag$REGION, " ", tab_bag$COMMON_NAME_USE)))
 for(i in 1:nrow(tab_bag2)) {
   print(tab_bag2$tab[[i]])
 }
 
 # Table for One-Time Closures
+gen_areas <- c("SPAWNING SMZS - AREA 53", "SPAWNING SMZS - AREA 51", "SPAWNING SMZS - DEVIL'S HOLE/GEORGETOWN HOLE",
+               "SPAWNING SMZS - SOUTH OF CAPE LOOKOUT NORTH CAROLINA", "SPAWNING SMZS - WARSAW HOLE", "MPA - (I) THROUGH (VIII)",
+               "HAPC - OCULINA BANK EXPERIMENTAL CLOSED AREA", "HAPC - OCULINA BANK", "AREA CLOSURE RELATED TO DEEPWATER HORIZON OIL SPILL",
+               "THE EDGES", "MADISON-SWANSON SITES AND STEAMBOAT LUMPS", "HAPC - TORTUGAS MARINE RESERVES", "RILEY'S HUMP", "REEF FISH STRESSED AREA",
+               "HAPC - WEST AND EAST FLOWER GARDEN BANKS", "HAPC - PULLEY RIDGE", "HAPC - MCGRAIL BANK", "HAPC - STETSON BANK", "REEF FISH LONGLINE AND BUOY GEAR RESTRICTED AREA",
+               "GRAMMANIK BANK REEF FISH FISHERY MANAGEMENT AREA", "HAPC - DEEPWATER CORAL  - (N)(1)(I) THROUGH (V)", "SMZ - (E)(1)(I) THROUGH (XVIII) AND (E)(1)(XXII) THROUGH (XXIX)",
+               "SHRIMP/STONE CRAB SEPARATION ZONES - ZONE I", "SHRIMP/STONE CRAB SEPARATION ZONES - ZONE III", "SOUTHWEST FLORIDA SEASONAL TRAWL CLOSURE", "SHRIMP/STONE CRAB SEPARATION ZONES - ZONE IV",
+               "SHRIMP/STONE CRAB SEPARATION ZONES - ZONE V","TORTUGAS SHRIMP SANCTUARY", "SHRIMP/STONE CRAB SEPARATION ZONES", "BOTTOM LONGLINE REEF FISH FISHERY MANAGEMENT AREA EAST OF 85°30' WEST",
+               "BAJO DE SICO REEF FISH FISHERY MANAGEMENT AREA", "MUTTON SNAPPER SPAWNING AGGREGATION REEF FISH FISHERY MANAGEMENT AREA", "RED HIND SPAWNING AGGREGATION WEST OF PUERTO RICO - BAJO DE SICO", 
+               "RED HIND SPAWNING AGGREGATION WEST OF PUERTO RICO - ABRIR LA SIERRA BANK", "RED HIND SPAWNING AGGREGATION WEST OF PUERTO RICO - TOURMALINE BANK", "RED HIND SPAWNING AGGREGATION WEST OF PUERTO RICO REEF FISH MANAGEMENT AREA",
+               "RED HIND SPAWNING AGGREGATION EAST OF ST. CROIX REEF FISH FISHERY MANAGEMENT AREA", "HIND BANK MARINE CONSERVATION DISTRICT (MCD) REEF FISH FISHERY MANAGEMENT AREA", "SHRIMP/STONE CRAB SEPARATION ZONES - ZONE I AND III", 
+               "FCZ AREA II",  "FCZ AREA I", "SMZ - (E)(1)(I) THROUGH (LI)", "SMZ - (E)(1)(I) THROUGH (X), (E)(1)(XX), AND (E)(1)(XXII) THROUGH (XXXIX)")
 tab_close_simple <- mh_expanded %>%
   filter(COMMON_NAME_USE == spp, FMP == fmp, MANAGEMENT_TYPE_USE == 'CLOSURE', STATUS_TYPE == 'SIMPLE') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
-  filter(ZONE_USE == 'ALL') %>%
+  filter(!(ZONE_USE %in% gen_areas)) %>%
   ungroup() %>%
   mutate(START_YEAR = format(START_DATE2, "%Y"),
          START_DATE3 = case_when(!is.na(START_TIME_USE) ~ paste0(format(START_DATE2, "%m/%d/%Y"), " ", START_TIME_USE),
@@ -207,7 +219,7 @@ tab_close_simple2 <- tab_close_simple %>%
        align(part = "all", align = "center") %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:6), width=0.9) %>%
-       set_caption(paste(tab_close_simple$COMMON_NAME_USE)))
+       set_caption(paste0(tab_close_simple$REGION, " ", tab_close_simple$COMMON_NAME_USE, " ", tab_close_simple$MANAGEMENT_TYPE_USE)))
 for(i in 1:nrow(tab_close_simple2)) {
   print(tab_close_simple2$tab[[i]])
 }
@@ -263,7 +275,7 @@ tab_close_recur2 <- tab_close_recur %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste(tab_close_recur$COMMON_NAME_USE)))
+       set_caption(paste0(tab_close_recur$REGION, " ", tab_close_recur$COMMON_NAME_USE, " ", tab_close_recur$MANAGEMENT_TYPE_USE)))
 for(i in 1:nrow(tab_close_recur2)) {
   print(tab_close_recur2$tab[[i]])
 }
@@ -324,7 +336,7 @@ tab_acl2 <- tab_acl %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste(tab_acl$COMMON_NAME_USE)))
+       set_caption(paste0(tab_acl$REGION, " ", tab_acl$COMMON_NAME_USE, " ", tab_acl$MANAGEMENT_TYPE_USE)))
 for(i in 1:nrow(tab_acl2)) {
   print(tab_acl2$tab[[i]])
 }
