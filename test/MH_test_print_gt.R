@@ -19,39 +19,79 @@ closures = mh_expanded %>%
 summary(factor(closures$MANAGEMENT_STATUS_USE))
 summary(factor(closures$STATUS_TYPE))
 
+summary(factor(mh_expanded$MANAGEMENT_STATUS_USE))
+summary(factor(mh_expanded$STATUS_TYPE))
+
 print = mh_expanded %>%
   filter(FMP %in% c("REEF FISH RESOURCES OF THE GULF OF MEXICO"),
          SPP_NAME %in% c("SNAPPER, RED"),
-         MANAGEMENT_TYPE_USE %in% c("MINIMUM SIZE LIMIT",
+         !MANAGEMENT_TYPE_USE %in% c("MINIMUM SIZE LIMIT",
                                     "BAG LIMIT",
                                     "CREW BAG LIMIT",
-                                    "CLOSURE"),
-         NEVER_IMPLEMENTED == 0)  %>%
+                                    "CLOSURE"))  %>%
   mutate(VALUE_RATE = case_when(is.na(VALUE_RATE) ~ "NA",
                                 TRUE ~ VALUE_RATE),
          VALUE_TYPE = case_when(is.na(VALUE_TYPE) ~ "NA",
                                 TRUE ~ VALUE_TYPE),
          VALUE_UNITS = case_when(is.na(VALUE_UNITS) ~ "NA",
                                 TRUE ~ VALUE_UNITS))%>%
-  group_by(MANAGEMENT_CATEGORY, MANAGEMENT_TYPE_USE, STATUS_TYPE,
-           JURISDICTION, JURISDICTIONAL_WATERS, FMP,
+  group_by(MANAGEMENT_CATEGORY, MANAGEMENT_TYPE_USE, FMP,
+           #JURISDICTION, JURISDICTIONAL_WATERS, 
            SECTOR_USE, SUBSECTOR_USE, REGION,
-           SPP_NAME) %>%
-  select(MANAGEMENT_STATUS_USE, REGULATION_ID, SECTOR_USE, REGION, ZONE_USE, 
+           SPP_NAME, CLUSTER) %>%
+  select(MANAGEMENT_STATUS_USE, SECTOR_USE, REGION, ZONE_USE, 
          START_DATE2, END_DATE2,
          VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE,
-         FR_CITATION, ACTION, ACTION_TYPE, 
-         MANAGEMENT_TYPE_USE, STATUS_TYPE, MANAGEMENT_CATEGORY,
-         JURISDICTION, JURISDICTIONAL_WATERS, FMP,
+         FR_CITATION, #ACTION, 
+         ACTION_TYPE, 
+         FLAG, NEVER_IMPLEMENTED, MULTI_REG,
+         REGULATION_ID, CLUSTER,
+         MANAGEMENT_TYPE_USE, MANAGEMENT_CATEGORY,FMP,
+         #JURISDICTION, JURISDICTIONAL_WATERS, 
          SUBSECTOR_USE,
          SPP_NAME) %>%
   arrange(SPP_NAME, MANAGEMENT_CATEGORY, 
-          MANAGEMENT_TYPE_USE, STATUS_TYPE, MANAGEMENT_STATUS_USE,
-          JURISDICTION, JURISDICTIONAL_WATERS, FMP,
+          MANAGEMENT_TYPE_USE, MANAGEMENT_STATUS_USE, FMP,
+          #JURISDICTION, JURISDICTIONAL_WATERS,
           SECTOR_USE, SUBSECTOR_USE, REGION,
-          START_DATE2)
+         START_DATE2) %>%
+  rename(STATUS = MANAGEMENT_STATUS_USE,
+         ZONE = ZONE_USE,
+         START = START_DATE2,
+         END = END_DATE2,
+         UNITS = VALUE_UNITS,
+         TYPE = VALUE_TYPE,
+         RATE = VALUE_RATE,
+         CITATION = FR_CITATION,
+         NI = NEVER_IMPLEMENTED,
+         MR = MULTI_REG,
+         ID = REGULATION_ID)
 
-gt(print)
+gt(print)  %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "grey84")
+    ),
+    locations = cells_body(
+      rows = NI == 1
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(style = "italic")
+    ),
+    locations = cells_body(
+      rows = FLAG == "YES"
+    )
+  ) %>%
+  tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = list(cells_row_groups(), 
+                     cells_column_labels())
+  )  %>%
+  cols_width(
+    ZONE ~ px(200)
+  )
 
 print_flex <- print %>%
   ungroup() %>%
@@ -74,3 +114,11 @@ as_flextable(print_flex) %>%
   merge_v(c("MANAGEMENT_STATUS_USE", "ZONE_USE",
             "VALUE", "VALUE_UNITS", "VALUE_TYPE", "VALUE_RATE")) %>%
   theme_box()
+
+
+
+complex = mh_expanded %>%
+  filter(STATUS_TYPE  == "COMPLEX")
+summary(factor(complex$MANAGEMENT_STATUS_USE))
+summary(factor(complex$STATUS_TYPE))
+unique(complex$CLUSTER)
