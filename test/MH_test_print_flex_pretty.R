@@ -5,7 +5,7 @@
 librarian::shelf(here, tidyverse, gt, flextable, officer)
 
 # RUN MH CODE
-here::i_am('test/MH_test_print.R')
+here::i_am('test/MH_test_print_flex_pretty.R')
 source(here('code', 'main_MH_prep.R'))
 
 # MULTI REG ONLY WORKS WHEN MONTH DAY AND YEAR START PROVIDED?
@@ -15,8 +15,8 @@ source(here('code', 'main_MH_prep.R'))
 # REG ID 792
 
 # Input parameters 
-spp = 'AMBERJACK, GREATER'
-fmp = "REEF FISH RESOURCES OF THE GULF OF MEXICO"
+spp = 'TRIGGERFISH, GRAY'
+fmp = "SNAPPER-GROUPER FISHERY OF THE SOUTH ATLANTIC REGION"
 
 # Table for Size limits
 tab_size <- mh_expanded %>%
