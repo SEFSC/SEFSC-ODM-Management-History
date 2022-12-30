@@ -177,14 +177,19 @@ mh_newvar <- mh_setup %>%
          # This will infer that the regulation remained in place through the end of that day and not one minute into the next day.
          END_DATE = case_when(END_TIME == "12:01:00 AM" ~ END_DATE - 1,
                               TRUE ~ END_DATE),
-         # Adjust the end day, time, and day of the week accordingly so when those fields are used for recurring 
-         # the individual fields will be consistent
-         END_DAY_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ END_DAY - 1,
+         # Adjust the end day, time, and day of the week accordingly  
+         # When end tie is 12:01, use the day of end date because the year of February already factored in to determine if its the 28th or 29th
+         END_DAY_USE = case_when(END_TIME == "12:01:00 AM" & !is.na(END_DATE) ~ as.numeric(day(END_DATE)),
                              TRUE ~ END_DAY),
-         END_TIME_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ "11:59:00 PM",
-                              TRUE ~ END_TIME),
+         END_MONTH_USE = case_when(END_TIME == "12:01:00 AM" & !is.na(END_DATE) ~ as.numeric(month(END_DATE)),
+                                 TRUE ~ END_MONTH),
+         # Retain end time of 12:01 only for recurring regulations where the end day is the 1st
+         # Otherwise remove 12:01 from end time or use the reported end time
+         END_TIME_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY == 1 ~ END_TIME,
+                                  END_TIME != "12:01:00 AM" ~ END_TIME),
          # When the END_TIME is listed as "12:01:00 AM" and the end day of the week is not missing then revert to one day prior
-         END_DAY_OF_WEEK_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ as.numeric(END_DAY_OF_WEEK) - 1,
+         # TO be consistent, still use the condition when end day does not equal 1, but as of 12/30/2022 there were no end day of the weeks with an end day of 1
+         END_DAY_OF_WEEK_USE = case_when(END_TIME == "12:01:00 AM" & END_DAY != 1 ~ as.numeric(END_DAY_OF_WEEK) - 1,
                                          TRUE ~ as.numeric(END_DAY_OF_WEEK)),
          # Format start and end day of week use to deal with 0 and 8 of 7 level factor
          START_DAY_OF_WEEK_USE = case_when(START_DAY_OF_WEEK_USE == 8 ~ 1,
