@@ -2,7 +2,7 @@
 
 # Load packages ####
 #install.packages("librarian")
-librarian::shelf(here, tidyverse)
+librarian::shelf(here, tidyverse, lubridate)
 
 # Suppress summarize info ####
 options(dplyr.summarize.inform = FALSE)
