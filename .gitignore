@@ -5,3 +5,6 @@
 processed/
 
 .Rhistory
+
+# Archived raw MH csv files
+data/raw/Archived files/
