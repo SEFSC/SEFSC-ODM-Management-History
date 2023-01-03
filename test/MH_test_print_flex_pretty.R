@@ -15,12 +15,12 @@ source(here('code', 'main_MH_prep.R'))
 # REG ID 792
 
 # Input parameters 
-spp = 'TRIGGERFISH, GRAY'
-fmp = "SNAPPER-GROUPER FISHERY OF THE SOUTH ATLANTIC REGION"
+spp = 'SNAPPER, RED'
+region = "GULF OF MEXICO"
 
 # Table for Size limits
 tab_size <- mh_expanded %>%
-  filter(COMMON_NAME_USE == spp, FMP == fmp, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS') %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
   mutate(START_YEAR = format(START_DATE2, "%Y"),
@@ -69,7 +69,7 @@ for(i in 1:nrow(tab_size2)) {
 
 # Table for Trip Limit
 tab_trip <- mh_expanded %>%
-  filter(COMMON_NAME_USE == spp, FMP == fmp, MANAGEMENT_TYPE_USE == 'TRIP LIMIT') %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'TRIP LIMIT') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
   mutate(START_YEAR = format(START_DATE2, "%Y"),
@@ -120,7 +120,7 @@ for(i in 1:nrow(tab_trip2)) {
   
 # Table for Bag Limit
 tab_bag <- mh_expanded %>%
-  filter(COMMON_NAME_USE == spp, FMP == fmp, MANAGEMENT_TYPE_USE %in% c('BAG LIMIT', 'CREW BAG LIMIT')) %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE %in% c('BAG LIMIT', 'CREW BAG LIMIT')) %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
   mutate(START_YEAR = format(START_DATE2, "%Y"),
@@ -167,7 +167,7 @@ for(i in 1:nrow(tab_bag2)) {
   print(tab_bag2$tab[[i]])
 }
 
-# Table for One-Time Closures
+# Table for One-Time Closures and prohibited gear
 gen_areas <- c("SPAWNING SMZS - AREA 53", "SPAWNING SMZS - AREA 51", "SPAWNING SMZS - DEVIL'S HOLE/GEORGETOWN HOLE",
                "SPAWNING SMZS - SOUTH OF CAPE LOOKOUT NORTH CAROLINA", "SPAWNING SMZS - WARSAW HOLE", "MPA - (I) THROUGH (VIII)",
                "HAPC - OCULINA BANK EXPERIMENTAL CLOSED AREA", "HAPC - OCULINA BANK", "AREA CLOSURE RELATED TO DEEPWATER HORIZON OIL SPILL",
@@ -181,9 +181,9 @@ gen_areas <- c("SPAWNING SMZS - AREA 53", "SPAWNING SMZS - AREA 51", "SPAWNING S
                "RED HIND SPAWNING AGGREGATION EAST OF ST. CROIX REEF FISH FISHERY MANAGEMENT AREA", "HIND BANK MARINE CONSERVATION DISTRICT (MCD) REEF FISH FISHERY MANAGEMENT AREA", "SHRIMP/STONE CRAB SEPARATION ZONES - ZONE I AND III", 
                "FCZ AREA II",  "FCZ AREA I", "SMZ - (E)(1)(I) THROUGH (LI)", "SMZ - (E)(1)(I) THROUGH (X), (E)(1)(XX), AND (E)(1)(XXII) THROUGH (XXXIX)")
 tab_close_simple <- mh_expanded %>%
-  filter(COMMON_NAME_USE == spp, FMP == fmp, MANAGEMENT_TYPE_USE == 'CLOSURE', STATUS_TYPE == 'SIMPLE') %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, ((MANAGEMENT_TYPE_USE == 'CLOSURE' & STATUS_TYPE == 'SIMPLE') | MANAGEMENT_TYPE_USE == 'PROHIBITED GEAR')) %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
-  filter(!(ZONE_USE %in% gen_areas)) %>%
+  #filter(!(ZONE_USE %in% gen_areas)) %>%
   ungroup() %>%
   mutate(START_YEAR = format(START_DATE2, "%Y"),
          START_DATE3 = case_when(!is.na(START_TIME_USE) ~ paste0(format(START_DATE2, "%m/%d/%Y"), " ", START_TIME_USE),
@@ -195,9 +195,10 @@ tab_close_simple <- mh_expanded %>%
          ZONE2 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
          VALUE2 = case_when(VALUE == 'CLOSE' ~ 'Closure',
                             VALUE == 'OPEN' ~ 'Reopening'),
-         REG_TYPE = case_when(MANAGEMENT_STATUS_USE == 'ONCE' ~ str_to_title(VALUE2),
+         REG_TYPE = case_when(MANAGEMENT_TYPE_USE == 'PROHIBITED GEAR' ~ str_to_title(MANAGEMENT_TYPE_USE),
+                              MANAGEMENT_STATUS_USE == 'ONCE' ~ str_to_title(VALUE2),
                               TRUE ~ paste0(str_to_title(MANAGEMENT_STATUS_USE), " ", str_to_title(VALUE2)))) %>%
-  arrange(SECTOR_USE, ZONE2, START_DATE2) 
+  arrange(SECTOR_USE, START_DATE2) 
 tab_close_simple2 <- tab_close_simple %>%
   select(CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, SECTOR2, ZONE2, REG_TYPE, START_YEAR, START_DATE3, END_DATE3, FR_CITATION) %>%
   group_by(CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE) %>%
@@ -219,16 +220,16 @@ tab_close_simple2 <- tab_close_simple %>%
        align(part = "all", align = "center") %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:6), width=0.9) %>%
-       set_caption(paste0(tab_close_simple$REGION, " ", tab_close_simple$COMMON_NAME_USE, " ", tab_close_simple$MANAGEMENT_TYPE_USE)))
+       set_caption(paste0(tab_close_simple$REGION, " ", tab_close_simple$COMMON_NAME_USE, " ", tab_close_simple$MANAGEMENT_TYPE_USE))) 
 for(i in 1:nrow(tab_close_simple2)) {
   print(tab_close_simple2$tab[[i]])
 }
 
 # Table for Recurring Closures
 tab_close_recur <- mh_expanded %>%
-  filter(COMMON_NAME_USE == spp, FMP == fmp, MANAGEMENT_TYPE_USE == 'CLOSURE', STATUS_TYPE != 'SIMPLE') %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'CLOSURE', STATUS_TYPE != 'SIMPLE') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
-  filter(ZONE_USE == 'ALL') %>%
+  #filter(ZONE_USE == 'ALL') %>%
   ungroup() %>%
   mutate(START_YEAR = format(START_DATE2, "%Y"),
          START_DATE3 = format(START_DATE2, "%m/%d/%Y"),
@@ -339,4 +340,48 @@ tab_acl2 <- tab_acl %>%
        set_caption(paste0(tab_acl$REGION, " ", tab_acl$COMMON_NAME_USE, " ", tab_acl$MANAGEMENT_TYPE_USE)))
 for(i in 1:nrow(tab_acl2)) {
   print(tab_acl2$tab[[i]])
+}
+
+# Table for Gear Restrictions
+tab_gear <- mh_expanded %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_CATEGORY == "GEAR REQUIREMENTS") %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_YEAR = format(START_DATE2, "%Y"),
+         START_DATE3 = case_when(!is.na(START_TIME_USE) ~ paste0(format(START_DATE2, "%m/%d/%Y"), " ", START_TIME_USE),
+                                 TRUE ~ format(START_DATE2, "%m/%d/%Y")),
+         END_YEAR = format(END_DATE2, "%Y"),
+         END_DATE3 = case_when(!is.na(END_TIME_USE) ~ paste0(format(END_DATE2, "%m/%d/%Y"), " ", END_TIME_USE),
+                               TRUE ~ format(END_DATE2, "%m/%d/%Y")),
+         SECTOR2 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE2 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         REG_TYPE = str_to_title(MANAGEMENT_TYPE_USE),
+         CLUSTER = as.character(CLUSTER)) %>%
+  arrange(CLUSTER, SECTOR_USE, START_DATE2) 
+tab_gear2 <- tab_gear %>%
+  select(COMMON_NAME_USE, REGION, SECTOR_USE, CLUSTER, SECTOR2, ZONE2, REG_TYPE, START_YEAR, START_DATE3, END_DATE3, FR_CITATION) %>%
+  group_by(COMMON_NAME_USE, REGION, SECTOR_USE) %>%
+  do(tab = flextable(.[4:11]) %>%
+       set_header_labels(CLUSTER = "Cluster ID",
+                         SECTOR2 = "Fishery",
+                         ZONE2 = "Region Affected",
+                         REG_TYPE = "Regulation Type",
+                         START_YEAR = "Start Year",
+                         START_DATE3 = "First Day in Effect",
+                         END_DATE3 = "Last Day in Effect",
+                         FR_CITATION = "FR Reference(s)") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center") %>%
+       width(j=c(3), width=0.45) %>%
+       width(j=c(1,4:6), width=0.9) %>%
+       set_caption(paste0(tab_gear$REGION, " ", tab_gear$COMMON_NAME_USE))) 
+for(i in 1:nrow(tab_gear2)) {
+  print(tab_gear2$tab[[i]])
 }
