@@ -186,7 +186,8 @@ mh_newvar <- mh_setup %>%
          # Retain end time of 12:01 only for recurring regulations where the end day is the 1st
          # Otherwise remove 12:01 from end time or use the reported end time
          END_TIME_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY == 1 ~ END_TIME,
-                                  END_TIME != "12:01:00 AM" ~ END_TIME),
+                                  # Single regulation (REG_ID = 80) where end time is 11:59 PM
+                                  END_TIME != "12:01:00 AM" & END_TIME != "11:59:00 PM" ~ END_TIME),
          # When the END_TIME is listed as "12:01:00 AM" and the end day of the week is not missing then revert to one day prior
          # TO be consistent, still use the condition when end day does not equal 1, but as of 12/30/2022 there were no end day of the weeks with an end day of 1
          END_DAY_OF_WEEK_USE = case_when(END_TIME == "12:01:00 AM" & END_DAY != 1 ~ as.numeric(END_DAY_OF_WEEK) - 1,
