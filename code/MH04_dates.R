@@ -171,7 +171,12 @@ mh_dates <- mh_reversions %>%
          NEVER_IMPLEMENTED = case_when(#MULTI_REG == 1 ~ 0,
                                        diff_days <= -1 ~ 1,
                                        START_DATE_USE > END_DATE ~ 1,
-                                       TRUE ~ 0))
+                                       TRUE ~ 0),
+         # ADJUST THE START DATE AND START TIME FOR CLUSTER 306 WHEN THE REOPENING ENDS IN THE MIDDLE OF THE DAY
+         START_TIME_USE = case_when(lead(!is.na(END_TIME_USE) & STATUS_TYPE == 'SIMPLE' & VALUE == 'OPEN') & START_DATE_USE == lead(END_DATE) + 1 ~ format(as.POSIXct(lead(END_TIME_USE), format = '%I:%M:%S %p') %m+% minutes(1), "%I:%M:%S %p"),
+                                    TRUE ~ START_TIME_USE),
+         START_DATE_USE = case_when(lead(!is.na(END_TIME_USE) & STATUS_TYPE == 'SIMPLE' & VALUE == 'OPEN') & START_DATE_USE == lead(END_DATE) + 1 ~ lead(END_DATE),
+                                    TRUE ~ START_DATE_USE))
   
   # CHECK: Make sure no reversions are also regulation removals
   dim(filter(mh_dates, REG_REMOVED == 1, REVERSION == TRUE))
