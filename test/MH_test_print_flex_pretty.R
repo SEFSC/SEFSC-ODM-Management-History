@@ -220,7 +220,7 @@ tab_close_simple2 <- tab_close_simple %>%
        align(part = "all", align = "center") %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:6), width=0.9) %>%
-       set_caption(paste0(tab_close_simple$REGION, " ", tab_close_simple$COMMON_NAME_USE, " ", tab_close_simple$MANAGEMENT_TYPE_USE))) 
+       set_caption(paste0(tab_close_simple$REGION, " ", tab_close_simple$COMMON_NAME_USE))) 
 for(i in 1:nrow(tab_close_simple2)) {
   print(tab_close_simple2$tab[[i]])
 }
@@ -243,12 +243,17 @@ tab_close_recur <- mh_expanded %>%
                               TRUE ~ paste0(str_to_title(MANAGEMENT_STATUS_USE), " ", str_to_title(VALUE2))),
          START_MONTH2 = format(as.Date(paste0("2021-", START_MONTH, "-01"), "%Y-%m-%d"), "%b"),
          END_MONTH2 = format(as.Date(paste0("2021-", END_MONTH, "-01"), "%Y-%m-%d"), "%b"),
-         FIRST = case_when(!is.na(START_DAY_OF_WEEK_USE) ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", START_DAY, "-", START_MONTH2),
-                           TRUE ~ paste0(START_DAY, "-", START_MONTH2)),
-         LAST = case_when(!is.na(END_DAY_OF_WEEK_USE) ~ paste0(str_to_title(END_DAY_OF_WEEK_USE), " ", END_DAY, "-", END_MONTH2),
-                          !is.na(END_DAY) & !is.na(END_MONTH) ~ paste0(END_DAY, "-", END_MONTH2),
-                          TRUE ~ paste0(format(END_DATE2, "%d"), "-", format(END_DATE2, "%b")))) %>%
-  arrange(SECTOR_USE, ZONE2, START_DATE2) 
+         FIRST = case_when(!is.na(START_DAY_OF_WEEK_USE) & (is.na(START_TIME_USE) | START_TIME_USE == "12:01:00 AM") ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", START_DAY, "-", START_MONTH2),
+                           !is.na(START_DAY_OF_WEEK_USE) & !is.na(START_TIME_USE) & START_TIME_USE != "12:01:00 AM" ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", START_DAY, "-", START_MONTH2, " ", START_TIME_USE),
+                           is.na(START_TIME_USE) | START_TIME_USE == "12:01:00 AM" ~ paste0(START_DAY, "-", START_MONTH2),
+                           TRUE ~ paste0(START_DAY, "-", START_MONTH2, " ", START_TIME_USE)),
+         LAST = case_when(!is.na(END_DAY_OF_WEEK_USE) & is.na(END_TIME_USE) ~ paste0(str_to_title(END_DAY_OF_WEEK_USE), " ", END_DAY, "-", END_MONTH2),
+                          !is.na(END_DAY_OF_WEEK_USE) & !is.na(END_TIME_USE) ~ paste0(str_to_title(END_DAY_OF_WEEK_USE), " ", END_DAY, "-", END_MONTH2, " ", END_TIME_USE),
+                          !is.na(END_DAY) & !is.na(END_MONTH) & !is.na(END_TIME_USE) ~ paste0(END_DAY, "-", END_MONTH2, " ", END_TIME_USE),
+                          !is.na(END_DAY) & !is.na(END_MONTH) & is.na(END_TIME_USE) ~ paste0(END_DAY, "-", END_MONTH2),
+                          is.na(END_TIME_USE) ~ paste0(format(END_DATE2, "%d"), "-", format(END_DATE2, "%b")),
+                          TRUE ~ paste0(format(END_DATE2, "%d"), "-", format(END_DATE2, "%b"), " ", END_TIME_USE))) %>%
+  arrange(SECTOR_USE, ZONE2, REG_TYPE, START_DATE2) 
 tab_close_recur2 <- tab_close_recur %>%
   select(CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, SECTOR2, ZONE2, REG_TYPE, START_YEAR, END_YEAR, START_DATE3, END_DATE3, FIRST, LAST, FR_CITATION) %>%
   group_by(CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE) %>%
@@ -265,6 +270,7 @@ tab_close_recur2 <- tab_close_recur %>%
                          FR_CITATION = "FR Reference(s)") %>%
        merge_v(j = 1, part = "body") %>%
        merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
        merge_v(j = 8, part = "body") %>%
        merge_v(j = 9, part = "body") %>%
        theme_box() %>%
@@ -276,7 +282,7 @@ tab_close_recur2 <- tab_close_recur %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste0(tab_close_recur$REGION, " ", tab_close_recur$COMMON_NAME_USE, " ", tab_close_recur$MANAGEMENT_TYPE_USE)))
+       set_caption(paste0(tab_close_recur$REGION, " ", tab_close_recur$COMMON_NAME_USE)))
 for(i in 1:nrow(tab_close_recur2)) {
   print(tab_close_recur2$tab[[i]])
 }
