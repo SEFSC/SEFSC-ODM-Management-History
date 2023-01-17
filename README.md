@@ -1,6 +1,12 @@
 # FORKED Repository of the SEFSC Management History Processing Project
 
-This SEFSC - ODM - Management History repository provides a method for generating an analysis-ready version of the Management History Database. In their original format, the records in this database represent changes in management actions affecting federally managed species throughout the Gulf of Mexico, South Atlantic, and U.S. Caribbean regions. The data files and code contained in this repository define and execute logic for grouping and creating streamlined time series of related management events. This process is actively being updated. Currently, the project is focused on the Gulf of Mexico Reef Fish Resources FMP data. 
+This SEFSC - ODM - Management History repository provides a method for generating an analysis-ready version of the Management History Database. In their original format, the records in this database represent changes in management actions affecting federally managed species throughout the Gulf of Mexico, South Atlantic, and U.S. Caribbean regions. The data files and code contained in this repository define and execute logic for grouping and creating streamlined time series of related management events. This process is actively being updated. Draft metadata can be found [here](https://docs.google.com/document/d/1P229OLxEG_iIS31VEbKlKiW2jmiFPKfn5N9Vr9xG4dM/edit#heading=h.gjdgxs).
+
+## code/
+This folder contains the standard processing code for generating an analysis-ready dataset. The metadata for this code can be found [here](https://docs.google.com/document/d/1FXv0kkcQRFgHativf3xW3v7-eQLyTDvb/edit#).
+
+## data/
+This folder contains the raw Management History data downloaded from the Online Database Manager (ODM). Additional csv files for grouping the data and cleaning up reported zone names are also found here.
 
 This repository is used for making changes/improvements to the code while preserving the SEFSC version. This repo houses all issues and discussions as well as a testing branch to make sure our changes do not affect the results of known clusters. The testing branch will remain in this fork and will never get pushed to the main SEFSC repo.
 
