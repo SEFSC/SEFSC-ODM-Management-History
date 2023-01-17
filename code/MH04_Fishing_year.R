@@ -108,3 +108,21 @@ mh_fishing_year <- mh_cluster_ids %>%
            diff_days <= -1 ~ 1,
            START_DATE > END_DATE ~ 1,
            TRUE ~ 0))
+
+# Filter for only fishing year management type
+# Include REG_REMOVED == 0 because this helps us in getting an end date for fishing years that end, but we do not want to keep the record that "turns off" the regulation
+mh_fy <- mh_dates %>%
+  filter(MANAGEMENT_TYPE_USE == 'FISHING YEAR', REG_REMOVED == 0)
+
+# Identify clusters that have a split fishing year - NONE
+mh_fy2 <- mh_fy %>% group_by(FR_CITATION, FMP, REGION, SPP_NAME, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, EFFECTIVE_DATE) %>%
+  summarise(N = n())
+
+mh_fy_dates <- mh_fy %>% ungroup() %>%
+  select(CLUSTER, ZONE_USE, START_DATE_USE, END_DATE, START_MONTH, START_DAY_USE) %>%
+  # Format start month and day into FY1
+  mutate()
+
+chk <- mh_fy %>% filter(FR_CITATION == '80 FR 4216')
+chk2 <- mh_fy %>% filter(CLUSTER == 79) %>% select(CLUSTER, FR_CITATION, FMP, REGION, SPP_NAME, SECTOR_USE, SUBSECTOR_USE, EFFECTIVE_DATE,
+                                                   START_DATE_USE, END_DATE, START_MONTH, START_DAY_USE)
