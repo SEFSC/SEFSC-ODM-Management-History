@@ -75,9 +75,9 @@ mh_sp_expanded_n <- mh_dates %>%
          SPECIES_ITIS_USE = as.character(SPECIES_ITIS)) %>%
   select(-SPECIES_ITIS)
 
-  # Join expanded data frames with data frame of non-DETAILED records
-  mh_sp_expanded <- mh_sp_expanded_y1 %>%
-    bind_rows(mh_sp_expanded_y2, mh_sp_expanded_n)
+# Join expanded data frames with data frame of non-DETAILED records
+mh_sp_expanded <- mh_sp_expanded_y1 %>%
+  bind_rows(mh_sp_expanded_y2, mh_sp_expanded_n)
 
 # REMOVE expanded species that are no longer a part of that group
 # ADJUST START or END DATES using SPECIES ADDED and REMOVED dates
@@ -159,7 +159,67 @@ chk_spp <- mh_sp_expanded %>%
            # When IMP_END_DATE is flagged (= 1) the REMOVED_SP_DATE should be used as the END_DATE
            # Otherwise the END_DATE should be used for END_DATE2
            END_DATE2 = case_when(IMP_END_DATE == 1 ~ REMOVED_SP_DATE,
-                                TRUE ~ END_DATE)) 
+                                TRUE ~ END_DATE))
+  
+# Expand SPP_NAME ALL fishing year
+mh_fy_expanded <- mh_fy_w %>%
+  # Join to species list table by SPP_NAME, SPP_TYPE, and FMP
+  full_join(., sp_info_use_s, by = c("FMP", "SPP_TYPE", "SPP_NAME")) %>%
+  # Remove records from sp_info_use_s that do not apply to fishing year
+  filter(!is.na(SECTOR_USE)) %>%
+  mutate(COMMON_NAME_USE = case_when(is.na(COMMON_NAME_USE) ~ SPP_NAME,
+                                      TRUE ~ COMMON_NAME_USE),
+          SPECIES_ITIS_USE = case_when(is.na(SPECIES_ITIS_USE) ~ as.character(SPECIES_ITIS),
+                                      TRUE ~ SPECIES_ITIS_USE)) %>%
+  # Remove species expansion date variables
+  select(-c(SPECIES_ITIS, SCIENTIFIC_NAME, ADDED_SP_DATE, REMOVED_SP_DATE, SPP_TYPE, SPP_NAME))
+
+# Subset FY expansion 
+mh_fy_expanded_sz <- mh_fy_expanded %>% filter(SUBSECTOR_USE != 'ALL', ZONE_USE != 'ALL') %>%
+  rename(START_DATE_FY_1_sz = "START_DATE_FY_1",
+         START_DATE_FY_2_sz = "START_DATE_FY_2",
+         FY_1_sz = "FY_1",
+         FY_2_sz = "FY_2")
+mh_fy_expanded_z <- mh_fy_expanded %>% filter(ZONE_USE != 'ALL', SUBSECTOR_USE == 'ALL') %>%
+  rename(START_DATE_FY_1_z = "START_DATE_FY_1",
+         START_DATE_FY_2_z = "START_DATE_FY_2",
+         FY_1_z = "FY_1",
+         FY_2_z = "FY_2") %>%
+  select(-SUBSECTOR_USE)
+mh_fy_expanded_a <- mh_fy_expanded %>% filter(ZONE_USE == 'ALL', SUBSECTOR_USE == 'ALL') %>%
+  rename(START_DATE_FY_1_a = "START_DATE_FY_1",
+         START_DATE_FY_2_a = "START_DATE_FY_2",
+         FY_1_a = "FY_1",
+         FY_2_a = "FY_2") %>%
+  select(-c(SUBSECTOR_USE, ZONE_USE))
+  
+# Add fishing year to all clusters 
+mh_expanded2 <- mh_expanded %>%
+  ungroup() %>%
+  # Issue with species ITIS appearing as "\t173138"
+  mutate(SPECIES_ITIS_USE = gsub('\t', '', SPECIES_ITIS_USE)) %>%
+  # When specific to a subsector and zone
+  left_join(mh_fy_expanded_sz, by = c("REGION", "FMP", "SECTOR_USE", "ZONE_USE", "SUBSECTOR_USE",
+                                   "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
+  # When specific to a zone only
+  left_join(mh_fy_expanded_z, by = c("REGION", "FMP", "SECTOR_USE", "ZONE_USE",
+                                     "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
+  # When general to all zones and subsectors
+  left_join(mh_fy_expanded_a, by = c("REGION", "FMP", "SECTOR_USE",  
+                                     "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
+  # Take the first non-null value
+  mutate(START_DATE_FY_1 = coalesce(START_DATE_FY_1_sz, START_DATE_FY_1_z, START_DATE_FY_1_a),
+         START_DATE_FY_2 = coalesce(START_DATE_FY_2_sz, START_DATE_FY_2_z, START_DATE_FY_2_a),
+         FY_1 = coalesce(FY_1_sz, FY_1_z, FY_1_a),
+         FY_2 = coalesce(FY_2_sz, FY_2_z, FY_2_a)) %>%
+  # Remove unnecessary columns from join
+  select(-c(START_DATE_FY_1_sz, START_DATE_FY_1_z, START_DATE_FY_1_a,
+            START_DATE_FY_2_sz, START_DATE_FY_2_z, START_DATE_FY_2_a,
+            FY_1_sz, FY_1_z, FY_1_a,
+            FY_2_sz, FY_2_z, FY_2_a))
+  
+# CHECK: Review cluster with fishing year
+chk <- mh_expanded2 %>% filter(CLUSTER == 1030) %>% select(FMP, REGION, SECTOR_USE, SPECIES_ITIS_USE, COMMON_NAME_USE, START_DATE_FY_1, FY_1)
 
 # Export data sets ####
 # Export mh_expanded
