@@ -48,14 +48,18 @@ source(here('code', 'MH02_sector_ids.R'))
   # Data frame result: mh_cluster_ids
 source(here('code', 'MH03_cluster_ids.R'))
 
-# 4: Fill in dates ####
-  # Data frame result: mh_dates
-source(here('code', 'MH04_dates.R'))
+# 4: Process fishing year ####
+  # Data frame result: mh_fy_w
+source(here('code', 'MH04_fishing_year.R'))
 
-# 5: Species expansion and clean up dates ####
-# Data frame result: mh_expanded 
-# Data frame result: mh_analysis_ready (includes only variables of interest and simple clusters (no multi-reg for now))
-source(here('code', 'MH05_spp_expansion.R'))
+# 5: Fill in dates ####
+# Data frame result: mh_dates
+source(here('code', 'MH05_dates.R'))
+
+# 6: Species expansion and clean up dates ####
+  # Data frame result: mh_expanded 
+  # Data frame result: mh_analysis_ready (includes only variables of interest and simple clusters (no multi-reg for now))
+source(here('code', 'MH06_spp_expansion.R'))
 
 # Save environment as .Rdata file for testing against a static result
 saveRDS(mh_analysis_ready, here("data", "processed", paste0('MH_AL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
