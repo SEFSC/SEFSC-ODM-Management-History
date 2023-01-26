@@ -288,8 +288,8 @@ for(i in 1:nrow(tab_close_recur2)) {
 }
 
 # Table for ACLs
-tab_acl <- mh_expanded %>%
-  filter(COMMON_NAME_USE == spp, FMP == fmp, MANAGEMENT_CATEGORY == 'CATCH LIMITS') %>%
+tab_acl <- mh_expanded2 %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_CATEGORY == 'CATCH LIMITS') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
   mutate(START_YEAR = format(START_DATE2, "%Y"),
@@ -299,8 +299,12 @@ tab_acl <- mh_expanded %>%
          ZONE2 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
          START_MONTH2 = format(as.Date(paste0("2021-", START_MONTH, "-01"), "%Y-%m-%d"), "%b"),
          END_MONTH2 = format(as.Date(paste0("2021-", END_MONTH, "-01"), "%Y-%m-%d"), "%b"),
-         FIRST = case_when(!is.na(START_DAY_OF_WEEK_USE) ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", START_DAY, "-", START_MONTH2),
-                           TRUE ~ paste0(START_DAY, "-", START_MONTH2)),
+         FIRST = case_when(!is.na(START_DAY_OF_WEEK_USE) & !is.na(START_DAY) ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", START_DAY, "-", START_MONTH2),
+                           !is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 >= START_DATE_FY_1 ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", FY_1),
+                           !is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 < START_DATE_FY_1 & !is.na(FY_2) ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", FY_2),
+                           is.na(START_DAY_OF_WEEK_USE) & !is.na(START_DAY) ~ paste0(START_DAY, "-", START_MONTH2),
+                           is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 >= START_DATE_FY_1 ~ FY_1,
+                           is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 < START_DATE_FY_1 & !is.na(FY_2) ~ FY_2),
          LAST = case_when(!is.na(END_DAY_OF_WEEK_USE) ~ paste0(str_to_title(END_DAY_OF_WEEK_USE), " ", END_DAY, "-", END_MONTH2),
                           !is.na(END_DAY) & !is.na(END_MONTH) ~ paste0(END_DAY, "-", END_MONTH2),
                           TRUE ~ paste0(format(END_DATE2, "%d"), "-", format(END_DATE2, "%b"))),
@@ -317,7 +321,9 @@ tab_acl <- mh_expanded %>%
                              TRUE ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER)))) %>%
   arrange(SECTOR_USE, ZONE2, START_DATE2) 
 tab_acl2 <- tab_acl %>%
-  select(CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, SECTOR2, ZONE2, START_YEAR, START_DATE3, END_DATE3, FIRST, LAST, VALUE2, VALUE_TYPE2, FR_CITATION, ACTION2) %>%
+  select(REGULATION_ID, CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, SECTOR2, ZONE2, 
+         START_YEAR, START_DATE3, END_DATE3, FIRST, LAST, START_DATE_FY_1, FY_1, START_DATE_FY_2, FY_2,
+         VALUE2, VALUE_TYPE2, FR_CITATION, ACTION2) %>%
   group_by(CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE) %>%
   do(tab = flextable(.[7:17]) %>%
        set_header_labels(SECTOR2 = "Fishery",
@@ -342,8 +348,7 @@ tab_acl2 <- tab_acl %>%
        align(part = "all", align = "center") %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
-       width(j=c(1,4:8), width=0.9) %>%
-       set_caption(paste0(tab_acl$REGION, " ", tab_acl$COMMON_NAME_USE, " ", tab_acl$MANAGEMENT_TYPE_USE)))
+       width(j=c(1), width=0.9))
 for(i in 1:nrow(tab_acl2)) {
   print(tab_acl2$tab[[i]])
 }
