@@ -219,7 +219,11 @@ mh_expanded2 <- mh_expanded %>%
             FY_2_sz, FY_2_z, FY_2_a))
   
 # CHECK: Review cluster with fishing year
-chk <- mh_expanded2 %>% filter(CLUSTER == 1030) %>% select(FMP, REGION, SECTOR_USE, SPECIES_ITIS_USE, COMMON_NAME_USE, START_DATE_FY_1, FY_1)
+# NEEDS MORE WORK - WE HAVE RECORDS MISSING FISHING YEAR
+chk_fy <- mh_expanded2 %>% filter(is.na(START_DATE_FY_1)) %>% select(REGULATION_ID, FMP, REGION, SECTOR_USE, SPECIES_ITIS_USE, COMMON_NAME_USE, START_DATE_FY_1, FY_1) %>%
+  group_by(FMP, COMMON_NAME_USE) %>%
+  summarise(N = n())
+chk_null <- mh_fy_w %>% filter(FMP == 'SPINY LOBSTER FISHERY OF THE GULF OF MEXICO AND SOUTH ATLANTIC')
 
 # Export data sets ####
 # Export mh_expanded
