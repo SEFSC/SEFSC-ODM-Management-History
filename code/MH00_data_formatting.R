@@ -20,6 +20,8 @@ mh_cleaned <- mh %>%
   # Format dates to be mm/dd/yyyy to match added data (this may not be an issue in the future when pull directly from the database)
   mutate(EFFECTIVE_DATE = as.Date(EFFECTIVE_DATE, "%m/%d/%Y"),
          INEFFECTIVE_DATE = as.Date(INEFFECTIVE_DATE, "%m/%d/%Y")) %>%
+  # Filter to exclude data after your desired end of the time series
+  filter(EFFECTIVE_DATE <= end_timeseries) %>%
   # Rename regulation ID to match what appears in the database
   #rename(REGULATION_ID = REGULATION_ID.) %>%
   #Remove ="..." characters in species ITIS codes
