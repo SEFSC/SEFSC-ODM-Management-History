@@ -26,7 +26,9 @@ mh_cleaned <- mh %>%
   #rename(REGULATION_ID = REGULATION_ID.) %>%
   #Remove ="..." characters in species ITIS codes
   mutate(SPECIES_ITIS = gsub('="', '', SPECIES_ITIS),
-         SPECIES_ITIS = gsub('"', '', SPECIES_ITIS))%>%
+         SPECIES_ITIS = gsub('"', '', SPECIES_ITIS)) %>%
+  # Issue with species ITIS appearing as "\t173138"
+  mutate(SPECIES_ITIS = gsub('\t', '', SPECIES_ITIS)) %>%
   # Replace all "blank" fields with NA for consistency
   replace(. == '', NA) %>%
   # Remove A or B in FR Citation (example regulation ID = 11514)
