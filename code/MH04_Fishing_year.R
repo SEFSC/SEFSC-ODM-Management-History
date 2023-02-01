@@ -44,7 +44,12 @@ fs_to_fy <- mh_fs_ck2 %>%
 mh_fy <- mh_cluster_ids %>%
   mutate(MANAGEMENT_TYPE_USE = case_when(REGULATION_ID %in% fs_to_fy ~ 'FISHING YEAR',
                                          TRUE ~ MANAGEMENT_TYPE_USE)) %>%
-  filter(MANAGEMENT_TYPE_USE == 'FISHING YEAR', REG_REMOVED == 0)
+  filter(MANAGEMENT_TYPE_USE == 'FISHING YEAR', REG_REMOVED == 0) %>%
+  # RECODE CLUSTER ID OF RECODED MANAGEMENT TYPES SO THE CLUSTERS MATCH
+  mutate(NEW_CLUSTER = case_when(!REGULATION_ID %in% fs_to_fy ~ CLUSTER)) %>%
+  group_by(MANAGEMENT_TYPE_USE, JURISDICTION, JURISDICTIONAL_WATERS, FMP, SECTOR_USE, SUBSECTOR_USE, REGION, SPP_NAME) %>%
+  fill(NEW_CLUSTER) %>%
+  ungroup()
 
 # Identify clusters that have a split fishing year - NONE
 mh_fy_chk1 <- mh_fy %>% group_by(FR_CITATION, FMP, REGION, SPP_NAME, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, EFFECTIVE_DATE) %>%
@@ -65,7 +70,7 @@ mh_fy_chk2 <- mh_fy %>%
 if(nrow(mh_fy_chk2) != 0) { stop("Fishing year not 365 days")}
 
 mh_fy2 <- mh_fy %>% ungroup() %>%
-  select(CLUSTER, FMP, REGION, SPP_TYPE, SPP_NAME, SPECIES_ITIS, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, START_DATE, START_MONTH, START_DAY_USE) %>%
+  select(NEW_CLUSTER, FMP, REGION, SPP_TYPE, SPP_NAME, SPECIES_ITIS, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, START_DATE, START_MONTH, START_DAY_USE) %>%
   # Format start month and day as FY_MONTH, FY_DAY
   # Get month from number to month name abbreviation
   mutate(START_MONTH2 = format(as.Date(paste0("2021-", START_MONTH, "-01"), "%Y-%m-%d"), "%b"),
@@ -73,27 +78,13 @@ mh_fy2 <- mh_fy %>% ungroup() %>%
 
 # Consolidate into only meaningful changes
 mh_fy3 <- mh_fy2 %>%
-  group_by(CLUSTER, ZONE_USE, FY) %>%
-  mutate(START_DATE_FY = min(START_DATE)) %>%
-  select(CLUSTER, FMP, REGION, SPP_TYPE, SPP_NAME, SPECIES_ITIS, SECTOR_USE, SUBSECTOR_USE, ZONE_USE,
-         START_DATE_FY, FY) %>%
-  distinct() %>%
-  group_by(CLUSTER, ZONE_USE) %>%
-  arrange(START_DATE_FY) %>%
-  mutate(reg_order = rank(START_DATE_FY))
-
-# Identify changes in fishing year
-# There are 12 cluster/zones that change fishing year at one point in time, but only changed once
-chk_change <- mh_fy3 %>% group_by(CLUSTER, ZONE_USE) %>% summarize(N = n()) %>% filter(N != 1)
-
-# Structure fishing year data to wide-form for joining to the rest of MH data
-mh_fy_w <- mh_fy3 %>%
-  pivot_wider(names_from = reg_order, values_from = c(START_DATE_FY, FY)) %>%
   ungroup() %>%
-  # Retain only fields of interest for the join to the other clusters
-  select(-CLUSTER)
-
-# CHECK we have two fishing years for All CMP species for recreational sector
-chk <- mh_fy_w %>% filter(FMP == 'COASTAL MIGRATORY PELAGIC RESOURCES', REGION == 'GULF OF MEXICO', SECTOR_USE == 'RECREATIONAL', SPP_NAME == 'ALL')
+  group_by(NEW_CLUSTER, ZONE_USE, FY) %>%
+  mutate(EFFECTIVE_DATE_FY = min(START_DATE)) %>%
+  select(NEW_CLUSTER, FMP, REGION, SPP_TYPE, SPP_NAME, SPECIES_ITIS, SECTOR_USE, SUBSECTOR_USE, ZONE_USE,
+         EFFECTIVE_DATE_FY, FY) %>%
+  distinct() %>%
+  # Remove clusters 691 and 692 because cause duplicates when species expansion
+  filter(!NEW_CLUSTER %in% c(691, 692))
 
 # Add a reopening to each closure cluster at the start of the fishing season or fishing year
