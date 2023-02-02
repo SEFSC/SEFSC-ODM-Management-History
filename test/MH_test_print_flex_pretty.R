@@ -8,18 +8,12 @@ librarian::shelf(here, tidyverse, gt, flextable, officer)
 here::i_am('test/MH_test_print_flex_pretty.R')
 source(here('code', 'main_MH_prep.R'))
 
-# MULTI REG ONLY WORKS WHEN MONTH DAY AND YEAR START PROVIDED?
-
-# ISSUE WITH DATE SHIFT - MANUAL REG LIST HAS 8/29 and 8/30
-# CODE HAS 8/28 and 8/29
-# REG ID 792
-
 # Input parameters 
-spp = 'SNAPPER, RED'
-region = "GULF OF MEXICO"
+spp = 'GROUPER, RED'
+region = "SOUTH ATLANTIC"
 
 # Table for Size limits
-tab_size <- mh_expanded %>%
+tab_size <- mh_expanded2 %>%
   filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -63,12 +57,11 @@ tab_size2 <- tab_size %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
        set_caption(paste0(tab_size$REGION, " ", tab_size$COMMON_NAME_USE, " ", tab_size$MANAGEMENT_TYPE_USE)))
-for(i in 1:nrow(tab_size2)) {
-  print(tab_size2$tab[[i]])
-}
+# Print table to viewer (change number for each table)
+tab_size2$tab[[1]]
 
 # Table for Trip Limit
-tab_trip <- mh_expanded %>%
+tab_trip <- mh_expanded2 %>%
   filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'TRIP LIMIT') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -114,12 +107,11 @@ tab_trip2 <- tab_trip %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
        set_caption(paste0(tab_trip$REGION, " ", tab_trip$COMMON_NAME_USE, " ", tab_trip$MANAGEMENT_TYPE_USE)))
-for(i in 1:nrow(tab_trip2)) {
-  print(tab_trip2$tab[[i]])
-}
+# Print table to viewer (change number for each table)
+tab_trip2$tab[[1]]
   
 # Table for Bag Limit
-tab_bag <- mh_expanded %>%
+tab_bag <- mh_expanded2 %>%
   filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE %in% c('BAG LIMIT', 'CREW BAG LIMIT')) %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -163,9 +155,8 @@ tab_bag2 <- tab_bag %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
        set_caption(paste0(tab_bag$REGION, " ", tab_bag$COMMON_NAME_USE)))
-for(i in 1:nrow(tab_bag2)) {
-  print(tab_bag2$tab[[i]])
-}
+# Print table to viewer (change number for each table)
+tab_bag2$tab[[1]]
 
 # Table for One-Time Closures and prohibited gear
 gen_areas <- c("SPAWNING SMZS - AREA 53", "SPAWNING SMZS - AREA 51", "SPAWNING SMZS - DEVIL'S HOLE/GEORGETOWN HOLE",
@@ -180,7 +171,7 @@ gen_areas <- c("SPAWNING SMZS - AREA 53", "SPAWNING SMZS - AREA 51", "SPAWNING S
                "RED HIND SPAWNING AGGREGATION WEST OF PUERTO RICO - ABRIR LA SIERRA BANK", "RED HIND SPAWNING AGGREGATION WEST OF PUERTO RICO - TOURMALINE BANK", "RED HIND SPAWNING AGGREGATION WEST OF PUERTO RICO REEF FISH MANAGEMENT AREA",
                "RED HIND SPAWNING AGGREGATION EAST OF ST. CROIX REEF FISH FISHERY MANAGEMENT AREA", "HIND BANK MARINE CONSERVATION DISTRICT (MCD) REEF FISH FISHERY MANAGEMENT AREA", "SHRIMP/STONE CRAB SEPARATION ZONES - ZONE I AND III", 
                "FCZ AREA II",  "FCZ AREA I", "SMZ - (E)(1)(I) THROUGH (LI)", "SMZ - (E)(1)(I) THROUGH (X), (E)(1)(XX), AND (E)(1)(XXII) THROUGH (XXXIX)")
-tab_close_simple <- mh_expanded %>%
+tab_close_simple <- mh_expanded2 %>%
   filter(COMMON_NAME_USE == spp, REGION == region, ((MANAGEMENT_TYPE_USE == 'CLOSURE' & STATUS_TYPE == 'SIMPLE') | MANAGEMENT_TYPE_USE == 'PROHIBITED GEAR')) %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   #filter(!(ZONE_USE %in% gen_areas)) %>%
@@ -221,12 +212,11 @@ tab_close_simple2 <- tab_close_simple %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:6), width=0.9) %>%
        set_caption(paste0(tab_close_simple$REGION, " ", tab_close_simple$COMMON_NAME_USE))) 
-for(i in 1:nrow(tab_close_simple2)) {
-  print(tab_close_simple2$tab[[i]])
-}
+# Print table to viewer (change number for each table)
+tab_close_simple2$tab[[16]]
 
 # Table for Recurring Closures
-tab_close_recur <- mh_expanded %>%
+tab_close_recur <- mh_expanded2 %>%
   filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'CLOSURE', STATUS_TYPE != 'SIMPLE') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   #filter(ZONE_USE == 'ALL') %>%
@@ -283,9 +273,8 @@ tab_close_recur2 <- tab_close_recur %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:8), width=0.9) %>%
        set_caption(paste0(tab_close_recur$REGION, " ", tab_close_recur$COMMON_NAME_USE)))
-for(i in 1:nrow(tab_close_recur2)) {
-  print(tab_close_recur2$tab[[i]])
-}
+# Print table to viewer (change number for each table)
+tab_close_recur2$tab[[1]]
 
 # Table for ACLs
 tab_acl <- mh_expanded2 %>%
@@ -300,11 +289,11 @@ tab_acl <- mh_expanded2 %>%
          START_MONTH2 = format(as.Date(paste0("2021-", START_MONTH, "-01"), "%Y-%m-%d"), "%b"),
          END_MONTH2 = format(as.Date(paste0("2021-", END_MONTH, "-01"), "%Y-%m-%d"), "%b"),
          FIRST = case_when(!is.na(START_DAY_OF_WEEK_USE) & !is.na(START_DAY) ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", START_DAY, "-", START_MONTH2),
-                           !is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 >= START_DATE_FY_1 ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", FY_1),
-                           !is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 < START_DATE_FY_1 & !is.na(FY_2) ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", FY_2),
+                           !is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 >= EFFECTIVE_DATE_FY_1 ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", FY_1),
+                           !is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 < EFFECTIVE_DATE_FY_1 & !is.na(FY_2) ~ paste0(str_to_title(START_DAY_OF_WEEK_USE), " ", FY_2),
                            is.na(START_DAY_OF_WEEK_USE) & !is.na(START_DAY) ~ paste0(START_DAY, "-", START_MONTH2),
-                           is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 >= START_DATE_FY_1 ~ FY_1,
-                           is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 < START_DATE_FY_1 & !is.na(FY_2) ~ FY_2),
+                           is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 >= EFFECTIVE_DATE_FY_1 ~ FY_1,
+                           is.na(START_DAY_OF_WEEK_USE) & is.na(START_DAY) & START_DATE2 < EFFECTIVE_DATE_FY_1 & !is.na(FY_2) ~ FY_2),
          LAST = case_when(!is.na(END_DAY_OF_WEEK_USE) ~ paste0(str_to_title(END_DAY_OF_WEEK_USE), " ", END_DAY, "-", END_MONTH2),
                           !is.na(END_DAY) & !is.na(END_MONTH) ~ paste0(END_DAY, "-", END_MONTH2),
                           TRUE ~ paste0(format(END_DATE2, "%d"), "-", format(END_DATE2, "%b"))),
@@ -322,11 +311,12 @@ tab_acl <- mh_expanded2 %>%
   arrange(SECTOR_USE, ZONE2, START_DATE2) 
 tab_acl2 <- tab_acl %>%
   select(REGULATION_ID, CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, SECTOR2, ZONE2, 
-         START_YEAR, START_DATE3, END_DATE3, FIRST, LAST, START_DATE_FY_1, FY_1, START_DATE_FY_2, FY_2,
+         START_YEAR, START_DATE3, END_DATE3, FIRST, LAST, 
          VALUE2, VALUE_TYPE2, FR_CITATION, ACTION2) %>%
   group_by(CLUSTER, COMMON_NAME_USE, REGION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE) %>%
   do(tab = flextable(.[7:17]) %>%
-       set_header_labels(SECTOR2 = "Fishery",
+       set_header_labels(MANAGEMENT_TYPE_USE = "Quota",
+                         SECTOR2 = "Fishery",
                          ZONE2 = "Region Affected",
                          START_YEAR = "Start Year",
                          START_DATE3 = "Effective Date",
@@ -349,12 +339,11 @@ tab_acl2 <- tab_acl %>%
        width(j=c(2,9), width=1.8) %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1), width=0.9))
-for(i in 1:nrow(tab_acl2)) {
-  print(tab_acl2$tab[[i]])
-}
+# Print table to viewer (change number for each table)
+tab_acl2$tab[[1]]
 
 # Table for Gear Restrictions
-tab_gear <- mh_expanded %>%
+tab_gear <- mh_expanded2 %>%
   filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_CATEGORY == "GEAR REQUIREMENTS") %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -393,6 +382,5 @@ tab_gear2 <- tab_gear %>%
        width(j=c(3), width=0.45) %>%
        width(j=c(1,4:6), width=0.9) %>%
        set_caption(paste0(tab_gear$REGION, " ", tab_gear$COMMON_NAME_USE))) 
-for(i in 1:nrow(tab_gear2)) {
-  print(tab_gear2$tab[[i]])
-}
+# Print table to viewer (change number for each table)
+tab_gear2$tab[[1]]
