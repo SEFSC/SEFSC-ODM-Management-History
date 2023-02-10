@@ -1,4 +1,6 @@
-# Management History Processing Project
+# FORKED Repository of the SEFSC Management History Processing Project
+
+**This repository is used for making changes/improvements to the code while preserving the SEFSC version. This repo houses all issues and discussions as well as a testing branch to make sure our changes do not affect the results of known clusters. The testing branch will remain in this fork and will never get pushed to the main SEFSC repo.**
 
 This SEFSC - ODM - Management History repository provides a method for generating an analysis-ready version of the Management History Database. In their original format, the records in this database represent changes in management actions affecting federally managed species throughout the Gulf of Mexico, South Atlantic, and U.S. Caribbean regions. The data files and code contained in this repository define and execute logic for grouping and creating streamlined time series of related management events. This process is actively being updated. Draft metadata can be found [here](https://docs.google.com/document/d/1P229OLxEG_iIS31VEbKlKiW2jmiFPKfn5N9Vr9xG4dM/edit#heading=h.gjdgxs).
 

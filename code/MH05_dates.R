@@ -108,7 +108,7 @@ mh_reversions = mh_dates_prep %>%
                                TRUE ~ FALSE))
 
   # CHECK: REGULATION_ID 927 to confirm that new variables are working correctly 
-  test = mh_reversions %>% filter(REGULATION_ID == "927")
+  chk_reg = mh_reversions %>% filter(REGULATION_ID == "927")
 
   
 # Create date related logic and overwrite end date as needed ####
@@ -128,15 +128,15 @@ mh_dates <- mh_reversions %>%
          # If a record doesn't have a START_TIME diff should be adjusted by -1 (one day prior) 
          # This indicates that the regulation started at start of the START_DAY listed and 
          # ended the day before the next regulation started (day before START_DAY of subsequent regulation)
-         diff_days = case_when(is.na(lag(START_TIME)) ~ diff - 1, 
+         diff_days = case_when(is.na(lag(START_TIME_USE)) ~ diff - 1, 
                                # When START_TIME is "12:01:00 AM", diff should days should be lagged by one day
                                # This will infer that the regulation began at the start of the day, not one minute into the day
                                # This will help properly calculate diff_days
-                               lag(START_TIME) == "12:01:00 AM" ~ diff - 1,
+                               lag(START_TIME_USE) == "12:01:00 AM" ~ diff - 1,
                                # When START_TIME is "12:02:00 AM", diff should days should be lagged by one day
                                # This will infer that the regulation began at the start of the day, not two minutes into the day
                                # This will help properly calculate diff_days
-                               lag(START_TIME) == "12:02:00 AM" ~ diff - 1,
+                               lag(START_TIME_USE) == "12:02:00 AM" ~ diff - 1,
                                TRUE ~ diff),
          # CREATE: the variable of CHANGE_DATE to indicate when a regulation changed to the subsequent regulation (day before START_DATE_USE of subsequent regulation)
          # When diff_days is not calculated due to there being no subsequent regulation, 
@@ -168,10 +168,15 @@ mh_dates <- mh_reversions %>%
          # When the MULTI_REG variable is flagged (1), NEVER_IMPLEMENTED should not be flagged (0) meaning the regulation did go into effect
          # When the diff_days variable is less than or equal to -1 and MULTI_REG is 0, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
          # When the START_DATE_USE is after the END_DATE, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
-         NEVER_IMPLEMENTED = case_when(MULTI_REG == 1 ~ 0,
+         NEVER_IMPLEMENTED = case_when(#MULTI_REG == 1 ~ 0,
                                        diff_days <= -1 ~ 1,
                                        START_DATE_USE > END_DATE ~ 1,
-                                       TRUE ~ 0))
+                                       TRUE ~ 0),
+         # ADJUST THE START DATE AND START TIME FOR CLUSTER 306 WHEN THE REOPENING ENDS IN THE MIDDLE OF THE DAY
+         START_TIME_USE = case_when(lead(!is.na(END_TIME_USE) & STATUS_TYPE == 'SIMPLE' & VALUE == 'OPEN') & START_DATE_USE == lead(END_DATE) + 1 ~ format(as.POSIXct(lead(END_TIME_USE), format = '%I:%M:%S %p') %m+% minutes(1), "%I:%M:%S %p"),
+                                    TRUE ~ START_TIME_USE),
+         START_DATE_USE = case_when(lead(!is.na(END_TIME_USE) & STATUS_TYPE == 'SIMPLE' & VALUE == 'OPEN') & START_DATE_USE == lead(END_DATE) + 1 ~ lead(END_DATE),
+                                    TRUE ~ START_DATE_USE))
   
   # CHECK: Make sure no reversions are also regulation removals
   dim(filter(mh_dates, REG_REMOVED == 1, REVERSION == TRUE))
