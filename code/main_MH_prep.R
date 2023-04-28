@@ -2,7 +2,7 @@
 
 # Load packages ####
 #install.packages("librarian")
-librarian::shelf(here, tidyverse)
+librarian::shelf(here, tidyverse, lubridate)
 
 # Suppress summarize info ####
 options(dplyr.summarize.inform = FALSE)
@@ -30,7 +30,7 @@ end_timeseries =  as.Date("2021-12-31", "%Y-%m-%d")
   # To also better handle NA or null fields, the species data was transposed so that species_name_type indicates to original species field name
   # Name is the species aggregate, species group name, or when common name is ALL
   # The MH data set is also transposed to have a single common name field and no null values
-load(here('data/interim', 'MH_clean_spp_tables.RData'))
+sp_info_use = readRDS(here('data', 'interim', 'MH_clean_spp_tables.RDS'))
 
 # 0B: Data Formatting ####
   # Data frame result: mh_cleaned
@@ -48,10 +48,21 @@ source(here('code', 'MH02_sector_ids.R'))
   # Data frame result: mh_cluster_ids
 source(here('code', 'MH03_cluster_ids.R'))
 
-# 4: Fill in dates ####
-  # Data frame result: mh_dates
-source(here('code', 'MH04_dates.R'))
+# 4: Process fishing year ####
+  # Data frame result: mh_fy3
+source(here('code', 'MH04_fishing_year.R'))
 
-# 5: Species expansion and clean up dates ####
-# Data frame result: mh_expanded 
-source(here('code', 'MH05_spp_expansion.R'))
+# 5: Fill in dates ####
+# Data frame result: mh_dates
+source(here('code', 'MH05_dates.R'))
+
+# 6: Species expansion and clean up dates ####
+  # Data frame result: mh_expanded2 
+  # Data frame result: mh_analysis_ready (includes only variables of interest and simple clusters (no multi-reg for now))
+source(here('code', 'MH06_spp_expansion.R'))
+
+# Idea to add a script here thata link clusters that are dependent on each other to complete the story 
+# Closure, fishing year, and fishing season
+
+# Save environment as .Rdata file for testing against a static result
+saveRDS(mh_analysis_ready, here("data", "processed", paste0('MH_AL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))

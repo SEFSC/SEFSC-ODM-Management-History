@@ -18,7 +18,7 @@ mh_sect_expanded <- mh_cleaned %>%
   separate_rows(SECTOR_USE)
 
 # Add "DETAILED" YES/NO field (from Google Sheets) based on MANAGEMENT_TYPE ####
-# Read in Google Sheet with table outlining whether a MANAGEMENT_TYPE is detailed (Y/N)
+# Read in file outlining whether a MANAGEMENT_TYPE is detailed (Y/N)
 detailed_xref <- read.csv(here('data/raw', "mtype_detailed_xref.csv"),
                           stringsAsFactors = FALSE,
                           fileEncoding = 'Windows-1252') %>%
@@ -53,8 +53,8 @@ detailed_xref <- read.csv(here('data/raw', "mtype_detailed_xref.csv"),
   n_distinct(mh_sect_expanded$REGULATION_ID) == n_distinct(mh_sect_expanded2$REGULATION_ID)
   nrow(mh_sect_expanded) == nrow(mh_sect_expanded2)
 
-# Translate from old ZONE names to new ZONE names (from Google Sheets) ####
-# Read in Google Sheets that outlines new ZONE names for all FMPs
+# Translate from old ZONE names to new ZONE names ####
+# Read in file that outlines new ZONE names for all FMPs
 # These ZONEs were cleaned up for consistency
 area_xref <- read.csv(here('data/raw', "zone_name_xref.csv"),
                       stringsAsFactors = FALSE,
@@ -80,7 +80,7 @@ area_xref <- read.csv(here('data/raw', "zone_name_xref.csv"),
   # because the species list contains duplicates which are addressed later in the mh_spp_expansion.R script
   mh_setup <- mh_sect_expanded2 %>%
     left_join(area_xref, by = c("ZONE" = "ZONE")) 
-
+  
 # Create various new variables for processing ####
 # Results in the mh_newvar data frame
 # CREATE: the variables of vol, page, MANAGEMENT_TYPE_USE, ADJUSTMENT, MANAGEMENT_STATUS_USE, REG_REMOVED
@@ -132,42 +132,75 @@ mh_newvar <- mh_setup %>%
          # CREATE: END_MONTH_RECURRING = case_when(STATUS_TYPE == "RECURRING" ~ END_MONTH),
          # CREATE: END_TIME_RECURRING = case_when(STATUS_TYPE == "RECURRING" ~ END_TIME),
          # CREATE: END_DAY_OF_WEEK_RECURRING = case_when(STATUS_TYPE == "RECURRING" ~ END_DAY_OF_WEEK),
+         
+         # Format start and end day of week as ordered factors
+         START_DAY_OF_WEEK = factor(START_DAY_OF_WEEK, levels = c("MONDAY", "TUESDAY", "WEDNESDAY", 
+                                                  "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"),
+                                    ordered = TRUE),
+         END_DAY_OF_WEEK = factor(END_DAY_OF_WEEK, levels = c("MONDAY", "TUESDAY", "WEDNESDAY", 
+                                                                  "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"),
+                                    ordered = TRUE),
          # CREATE: START_DATE from the START_DAY, START_MONTH, and START_YEAR fields
-         # The START_DATE field is only created when START_DAY, START_MONTH, and START_YEAR are provided and different from EFFECTIVE_DATE 
-         # CREATE: END_DATE from the END_DAY, END_MONTH, and END_YEAR fields
-         # The END_DATE field is only created when END_DAY, END_MONTH, and END_YEAR are provided and different from INEFFECTIVE_DATE
+         # The START_DATE field is only created using START_DAY, START_MONTH, and START_YEAR when
+         # all three start day, month, year fields are provided and the management status is ONCE
          START_DATE = case_when(MANAGEMENT_STATUS_USE == "ONCE" &
                                   !is.na(START_DAY) &
                                   !is.na(START_MONTH) &
                                   !is.na(START_YEAR) ~ as.Date(paste(START_MONTH, START_DAY, START_YEAR, sep = "/"), "%m/%d/%Y"),
                                 TRUE ~ EFFECTIVE_DATE),
+         # Adjust the start date if its after the effective date so the start date = effective date
          START_DATE = case_when(START_DATE < EFFECTIVE_DATE ~ EFFECTIVE_DATE,
                                 TRUE ~ START_DATE),
+         # When the START_TIME is equal to "11:59:00 PM", the START_DATE should be pushed ahead by one day since
+         # the regulation will be in effect for the entirety of that day.
+         START_DATE = case_when(START_TIME == "11:59:00 PM" ~ START_DATE + 1,
+                                TRUE ~ START_DATE),
+         # Adjust the start day, time, and day of the week accordingly so when those fields are used for recurring 
+         # the individual fields will be consistent
+         START_DAY_USE = case_when(START_TIME == "11:59:00 PM" & !is.na(START_DAY) ~ START_DAY + 1,
+                                   TRUE ~ START_DAY),
+         # For start time, we remove the start time when "11:59:00 PM" because a null assumes the full day
+         START_TIME_USE = case_when(START_TIME != "11:59:00 PM" ~ START_TIME),
+         START_DAY_OF_WEEK_USE = case_when(START_TIME == "11:59:00 PM" & !is.na(START_DAY_OF_WEEK) ~ as.numeric(START_DAY_OF_WEEK) + 1,
+                                           TRUE ~ as.numeric(START_DAY_OF_WEEK)),
+         
+         # CREATE: END_DATE from the END_DAY, END_MONTH, and END_YEAR fields
+         # The END_DATE field is only created using END_DAY, END_MONTH, and END_YEAR when
+         # all end year, month, day fields are provided and and the management status is ONCE
          END_DATE = case_when(MANAGEMENT_STATUS_USE == "ONCE" &
                                 !is.na(END_DAY) &
                                 !is.na(END_MONTH) &
                                 !is.na(END_YEAR) ~ as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y"),
                               TRUE ~ INEFFECTIVE_DATE),
-         # When the END_TIME is listed as "12:01:00 AM", the STATUS_TYPE is RECURRING, and the END_DAY is not equal to 1, 
-         # the END_DAY should be reverted to one day prior. This will infer that the regulation remained in place through
-         # the end of that day and not one minute into the next day.
-         END_DAY = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ END_DAY - 1,
-                             TRUE ~ END_DAY),
-         # For records meeting the same requirements as above, the END_TIME should be removed since the END_DATE has been
-         # reverted to the day prior.
-         END_TIME = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY != 1 ~ "11:59:00 PM",
-                              TRUE ~ END_TIME),
-         # When the START_TIME is equal to "11:59:00 PM", the START_DATE should be pushed ahead by one day since
-         # the regulation will be in effect for the entirety of that day.
-         START_DATE = case_when(START_TIME == "11:59:00 PM" ~ START_DATE + 1,
-                                TRUE ~ START_DATE),
-         # For records meeting the requirement above, the START_TIME should be removed since the START_DATE has been pushed
-         # to the next day.
-         START_TIME = case_when(START_TIME != "11:59:00 PM" ~ START_TIME),
          # For records with an END_TIME of "12:01:00 AM", the END_DATE should be reverted to one day prior.
          # This will infer that the regulation remained in place through the end of that day and not one minute into the next day.
          END_DATE = case_when(END_TIME == "12:01:00 AM" ~ END_DATE - 1,
-                                TRUE ~ END_DATE),
-         # For records meeting the requirement above, the END_TIME should be removed since the END_DATE has been reverted
-         # to the day prior.
-         END_TIME = case_when(END_TIME != "12:01:00 AM" ~ END_TIME)) 
+                              TRUE ~ END_DATE),
+         # Adjust the end day, time, and day of the week accordingly  
+         # When end tie is 12:01, use the day of end date because the year of February already factored in to determine if its the 28th or 29th
+         END_DAY_USE = case_when(END_TIME == "12:01:00 AM" & !is.na(END_DATE) ~ as.numeric(day(END_DATE)),
+                             TRUE ~ END_DAY),
+         END_MONTH_USE = case_when(END_TIME == "12:01:00 AM" & !is.na(END_DATE) ~ as.numeric(month(END_DATE)),
+                                 TRUE ~ END_MONTH),
+         # Retain end time of 12:01 only for recurring regulations where the end day is the 1st
+         # Otherwise remove 12:01 from end time or use the reported end time
+         END_TIME_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY == 1 ~ END_TIME,
+                                  # Single regulation (REG_ID = 80) where end time is 11:59 PM
+                                  END_TIME != "12:01:00 AM" & END_TIME != "11:59:00 PM" ~ END_TIME),
+         # When the END_TIME is listed as "12:01:00 AM" and the end day of the week is not missing then revert to one day prior
+         # TO be consistent, still use the condition when end day does not equal 1, but as of 12/30/2022 there were no end day of the weeks with an end day of 1
+         END_DAY_OF_WEEK_USE = case_when(END_TIME == "12:01:00 AM" & END_DAY != 1 ~ as.numeric(END_DAY_OF_WEEK) - 1,
+                                         TRUE ~ as.numeric(END_DAY_OF_WEEK)),
+         # Format start and end day of week use to deal with 0 and 8 of 7 level factor
+         START_DAY_OF_WEEK_USE = case_when(START_DAY_OF_WEEK_USE == 8 ~ 1,
+                                           TRUE ~ START_DAY_OF_WEEK_USE),
+         END_DAY_OF_WEEK_USE = case_when(END_DAY_OF_WEEK_USE == 0 ~ 7,
+                                         TRUE ~ END_DAY_OF_WEEK_USE),
+         # Format start and end day of week use as ordered factors
+         START_DAY_OF_WEEK_USE = recode_factor(START_DAY_OF_WEEK_USE,
+                                               `1` = "MONDAY", `2` = "TUESDAY", `3` = "WEDNESDAY", 
+                                               `4` = "THURSDAY", `5` = "FRIDAY", `6` = "SATURDAY", `7` = "SUNDAY"),
+         END_DAY_OF_WEEK_USE = recode_factor(END_DAY_OF_WEEK_USE,
+                                             `1` = "MONDAY", `2` = "TUESDAY", `3` = "WEDNESDAY", 
+                                             `4` = "THURSDAY", `5` = "FRIDAY", `6` = "SATURDAY", `7` = "SUNDAY"))
+  

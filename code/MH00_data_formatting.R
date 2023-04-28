@@ -2,7 +2,7 @@
 # Data reformatting for R
 
 # Read in data
-mh <- read.csv(here('data/raw', "MH_DOWNLOAD_OCT_26_2022.csv"), 
+mh <- read.csv(here('data/raw', "MH_DOWNLOAD_JAN_13_2023.csv"), 
                stringsAsFactors = FALSE,
                colClasses=c("REGULATION_ID" = "numeric",
                             "START_DAY" = "numeric",
@@ -20,11 +20,15 @@ mh_cleaned <- mh %>%
   # Format dates to be mm/dd/yyyy to match added data (this may not be an issue in the future when pull directly from the database)
   mutate(EFFECTIVE_DATE = as.Date(EFFECTIVE_DATE, "%m/%d/%Y"),
          INEFFECTIVE_DATE = as.Date(INEFFECTIVE_DATE, "%m/%d/%Y")) %>%
+  # Filter to exclude data after your desired end of the time series
+  filter(EFFECTIVE_DATE <= end_timeseries) %>%
   # Rename regulation ID to match what appears in the database
   #rename(REGULATION_ID = REGULATION_ID.) %>%
   #Remove ="..." characters in species ITIS codes
   mutate(SPECIES_ITIS = gsub('="', '', SPECIES_ITIS),
-         SPECIES_ITIS = gsub('"', '', SPECIES_ITIS))%>%
+         SPECIES_ITIS = gsub('"', '', SPECIES_ITIS)) %>%
+  # Issue with species ITIS appearing as "\t173138"
+  mutate(SPECIES_ITIS = gsub('\t', '', SPECIES_ITIS)) %>%
   # Replace all "blank" fields with NA for consistency
   replace(. == '', NA) %>%
   # Remove A or B in FR Citation (example regulation ID = 11514)
