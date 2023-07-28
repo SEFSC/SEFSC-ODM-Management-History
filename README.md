@@ -8,6 +8,9 @@ This folder contains the standard processing code for generating an analysis-rea
 ## data/
 This folder contains the raw Management History data downloaded from the Online Database Manager (ODM). Additional csv files for grouping the data and cleaning up reported zone names are also found here.
 
+## examples/
+This folder contains example outputs that replicate tables and datasets used in the SouthEast Data and Assessment and Review ([SEDAR](https://sedarweb.org/)) process.
+
 # Disclamer:
 
 The Management History database is for general information purposes only. Any discrepancies between this information and the regulations as published in official sources of information, such as the Federal Register and Code of Federal Regulations will be resolved in favor of the official sources.
