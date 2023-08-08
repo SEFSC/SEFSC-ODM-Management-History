@@ -30,7 +30,7 @@ end_timeseries =  as.Date("2021-12-31", "%Y-%m-%d")
   # To also better handle NA or null fields, the species data was transposed so that species_name_type indicates to original species field name
   # Name is the species aggregate, species group name, or when common name is ALL
   # The MH data set is also transposed to have a single common name field and no null values
-sp_info_use = readRDS(here('data', 'interim', 'MH_clean_spp_tables.RDS'))
+sp_info_use = readRDS(here('ODM-MH-Data_log', 'data', 'interim', 'MH_clean_spp_tables.RDS'))
 
 # 0B: Data Formatting ####
   # Data frame result: mh_cleaned
