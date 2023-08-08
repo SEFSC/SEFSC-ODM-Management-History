@@ -9,16 +9,16 @@ options(dplyr.summarize.inform = FALSE)
 
 # Set working directory ####
 # Working directory is relative to project root (SEFSC-MH-Processing.Rproj)
-here::i_am('code/main_MH_prep.R')
+here::i_am('ODM-MH-Data_log/main_MH_prep.R')
 
 # Create data directories ####
 # Acquire MH data from ODM; have it in the data/raw folder
-if (!dir.exists(here("data"))){ dir.create(here("data")) }
-if (!dir.exists(here("data", "raw"))){ dir.create(here("data", "raw")) }
-if (!dir.exists(here("data", "interim"))){ dir.create(here("data", "interim")) }
-if (!dir.exists(here("data", "interim", "sector_clusters"))){ dir.create(here("data", "interim", "sector_clusters")) }
-if (!dir.exists(here("data", "interim", "clusters"))){ dir.create(here("data", "interim", "clusters")) }
-if (!dir.exists(here("data", "processed"))){ dir.create(here("data", "processed")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data"))){ dir.create(here("data")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "raw"))){ dir.create(here("data", "raw")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "interim"))){ dir.create(here("data", "interim")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "interim", "sector_clusters"))){ dir.create(here("data", "interim", "sector_clusters")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "interim", "clusters"))){ dir.create(here("data", "interim", "clusters")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "processed"))){ dir.create(here("data", "processed")) }
 
 # Define end of time series ####
 end_timeseries =  as.Date("2021-12-31", "%Y-%m-%d")
@@ -34,35 +34,31 @@ sp_info_use = readRDS(here('data', 'interim', 'MH_clean_spp_tables.RDS'))
 
 # 0B: Data Formatting ####
   # Data frame result: mh_cleaned
-source(here('code', 'MH00_data_formatting.R'))
+source(here('ODM-MH-Data_log', 'MH00_data_formatting.R'))
 
 # 1: Create new variables ####
   # Data frame result: mh_newvar
-source(here('code', 'MH01_new_variables.R'))
+source(here('ODM-MH-Data_log', 'MH01_new_variables.R'))
 
 # 2: Create sector and address sector forks ids ####
   # Data frame result: mh_subsect_expanded
-source(here('code', 'MH02_sector_ids.R'))
+source(here('ODM-MH-Data_log', 'MH02_sector_ids.R'))
 
 # 3: Create cluster groupings and cluster ids ####
   # Data frame result: mh_cluster_ids
-source(here('code', 'MH03_cluster_ids.R'))
+source(here('ODM-MH-Data_log', 'MH03_cluster_ids.R'))
 
-# 4: Process fishing year ####
-  # Data frame result: mh_fy3
-source(here('code', 'MH04_fishing_year.R'))
-
-# 5: Fill in dates ####
+# 4: Fill in dates ####
 # Data frame result: mh_dates
-source(here('code', 'MH05_dates.R'))
+source(here('ODM-MH-Data_log', 'MH04_dates.R'))
 
-# 6: Species expansion and clean up dates ####
+# 5: Species expansion and clean up dates ####
   # Data frame result: mh_expanded2 
   # Data frame result: mh_analysis_ready (includes only variables of interest and simple clusters (no multi-reg for now))
-source(here('code', 'MH06_spp_expansion.R'))
+source(here('ODM-MH-Data_log', 'MH05_spp_expansion.R'))
 
-# Idea to add a script here thata link clusters that are dependent on each other to complete the story 
+# Idea to add a script here that will link clusters that are dependent on each other to complete the story 
 # Closure, fishing year, and fishing season
 
-# Save environment as .Rdata file for testing against a static result
-saveRDS(mh_analysis_ready, here("data", "processed", paste0('MH_AL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
+# Save environment as .RDS file for testing against a static result
+saveRDS(mh_data_log, here("ODM-MH-Data_log", "data", "processed", paste0('MH_AL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))

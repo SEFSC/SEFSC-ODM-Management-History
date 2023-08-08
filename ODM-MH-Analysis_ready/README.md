@@ -1,0 +1,3 @@
+# ODM-MH-Analysis_ready code
+
+The ODM-MH-Analysis_ready folder within the SEFSC - ODM - Management History repository includes code related to processing MH Data Log, which was created in the ODM-MH-Data_log folder, to create an Analysis Ready dataset. The Analysis Ready dataset focuses on processing management types, such as closures, bag limits, trip limits, etc., that are dependent on a specified fishing year.
