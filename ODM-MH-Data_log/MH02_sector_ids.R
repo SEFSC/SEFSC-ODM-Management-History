@@ -24,7 +24,7 @@ sector.match <- c("MANAGEMENT_TYPE_USE",
 # Read in files with existing SECTOR_ID ####
 # Read in list of existing sector_precluster files
 # This list is grouped by the variables described above and contains a unique SECTOR_ID for each unique sector grouping
-  sector_id_files <- dir(here('data/interim/sector_clusters'), full.names = TRUE)
+  sector_id_files <- dir(here('ODM-MH-Data_log', 'data/interim/sector_clusters'), full.names = TRUE)
 
   # Read in and combine sector_id_files with existing_sector_clusters
   # This step combines any new sector_id_files with old sector groupings outlined in existing_sector_clusters

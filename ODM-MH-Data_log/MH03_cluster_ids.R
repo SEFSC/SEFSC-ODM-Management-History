@@ -22,7 +22,7 @@ cluster.match <- c("MANAGEMENT_TYPE_USE",
                    "SPP_NAME")
 
 # Read in files with existing CLUSTER IDs ####
-cluster_files <- dir(here('data/interim/clusters'), full.names = TRUE)
+cluster_files <- dir(here('ODM-MH-Data_log', 'data/interim/clusters'), full.names = TRUE)
 
   #Create existing_clusters data frame that includes previous CLUSTER groupings 
   if(length(cluster_files) > 0) {
