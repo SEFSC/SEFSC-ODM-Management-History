@@ -161,140 +161,140 @@ chk_spp <- mh_sp_expanded %>%
            END_DATE2 = case_when(IMP_END_DATE == 1 ~ REMOVED_SP_DATE,
                                 TRUE ~ END_DATE))
   
-# Expand SPP_NAME ALL fishing year
-mh_fy_expanded <- mh_fy3 %>%
-  # Join to species list table by SPP_NAME, SPP_TYPE, and FMP
-  full_join(., sp_info_use_s, by = c("FMP", "SPP_TYPE", "SPP_NAME")) %>%
-  # Remove records from sp_info_use_s that do not apply to fishing year
-  filter(!is.na(SECTOR_USE)) %>%
-  mutate(COMMON_NAME_USE = case_when(is.na(COMMON_NAME_USE) ~ SPP_NAME,
-                                      TRUE ~ COMMON_NAME_USE),
-          SPECIES_ITIS_USE = case_when(is.na(SPECIES_ITIS_USE) ~ as.character(SPECIES_ITIS),
-                                      TRUE ~ SPECIES_ITIS_USE)) %>%
-  ungroup() %>%
-  # Remove species expansion date variables
-  # Remove cluster variable because when SPP_NAME = 'ALL' expanded it will have a different cluster ID from species specific fishing years
-  select(-c(NEW_CLUSTER, SPECIES_ITIS, SCIENTIFIC_NAME, ADDED_SP_DATE, REMOVED_SP_DATE, SPP_TYPE, SPP_NAME)) %>%
-  group_by(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPECIES_ITIS_USE, COMMON_NAME_USE) %>%
-  arrange(EFFECTIVE_DATE_FY) %>%
-  mutate(reg_order = rank(EFFECTIVE_DATE_FY))
-
-# Identify changes in fishing year
-# There are 55 clusters that change fishing year at one point in time
-# Most have 1 change, but South Atlantic greater amberjack and black sea bass have 3 fishing year starts over time
-chk_change <- mh_fy_expanded %>% group_by(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPECIES_ITIS_USE, COMMON_NAME_USE) %>% 
-  summarize(N = n()) %>% filter(N != 1)
-
-# Structure fishing year data to wide-form for joining to the rest of MH data
-mh_fy_expanded_w <- mh_fy_expanded %>%
-  pivot_wider(names_from = reg_order, values_from = c(EFFECTIVE_DATE_FY, FY)) %>%
-  ungroup() 
-
-# CHECK fishing year where we have known 3 changes over time
-chk <- mh_fy_expanded %>% filter(FMP == 'SNAPPER-GROUPER FISHERY OF THE SOUTH ATLANTIC REGION', SECTOR_USE == 'RECREATIONAL', 
-                                 COMMON_NAME_USE == 'AMBERJACK, GREATER', ZONE_USE == 'ALL')
-# CHECK for duplicates 
-chk_dups <- mh_fy_expanded_w %>%
-  group_by(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPECIES_ITIS_USE, COMMON_NAME_USE) %>%
-  summarise(nrecs = n())
-if(any(chk_dups$nrecs) > 1){stop("You have duplicate records in the fishing year dataset ready to join")}
-
-# Subset FY expansion for the join
-# Fishing year for specific subsector and zone
-mh_fy_expanded_sz <- mh_fy_expanded_w %>% filter(SUBSECTOR_USE != 'ALL', ZONE_USE != 'ALL') %>%
-  rename(EFFECTIVE_DATE_FY_1_sz = "EFFECTIVE_DATE_FY_1",
-         EFFECTIVE_DATE_FY_2_sz = "EFFECTIVE_DATE_FY_2",
-         EFFECTIVE_DATE_FY_3_sz = "EFFECTIVE_DATE_FY_3",
-         FY_1_sz = "FY_1",
-         FY_2_sz = "FY_2",
-         FY_3_sz = "FY_3")
-# Fishing year for specific zone
-mh_fy_expanded_z <- mh_fy_expanded_w %>% filter(ZONE_USE != 'ALL', SUBSECTOR_USE == 'ALL') %>%
-  rename(EFFECTIVE_DATE_FY_1_z = "EFFECTIVE_DATE_FY_1",
-         EFFECTIVE_DATE_FY_2_z = "EFFECTIVE_DATE_FY_2",
-         EFFECTIVE_DATE_FY_3_z = "EFFECTIVE_DATE_FY_3",
-         FY_1_z = "FY_1",
-         FY_2_z = "FY_2",
-         FY_3_z = "FY_3") %>%
-  select(-SUBSECTOR_USE)
-# Fishing year for all zones and subsectors for management types where species expanded
-mh_fy_expanded_a <- mh_fy_expanded_w %>% filter(ZONE_USE == 'ALL', SUBSECTOR_USE == 'ALL') %>%
-  rename(EFFECTIVE_DATE_FY_1_a = "EFFECTIVE_DATE_FY_1",
-         EFFECTIVE_DATE_FY_2_a = "EFFECTIVE_DATE_FY_2",
-         EFFECTIVE_DATE_FY_3_a = "EFFECTIVE_DATE_FY_3",
-         FY_1_a = "FY_1",
-         FY_2_a = "FY_2",
-         FY_3_a = "FY_3") %>%
-  select(-c(SUBSECTOR_USE, ZONE_USE))
-# Fishing year for all zones and subsectors for management types where species NOT expanded
-mh_fy_a <- mh_fy3 %>% 
-  filter(ZONE_USE == 'ALL', SUBSECTOR_USE == 'ALL', SPP_NAME == 'ALL') %>%
-  ungroup() %>%
-  select(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPP_NAME, EFFECTIVE_DATE_FY, FY) %>%
-  group_by(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPP_NAME) %>%
-  arrange(EFFECTIVE_DATE_FY) %>%
-  mutate(reg_order = rank(EFFECTIVE_DATE_FY)) %>%
-  pivot_wider(names_from = reg_order, values_from = c(EFFECTIVE_DATE_FY, FY)) %>%
-  rename(EFFECTIVE_DATE_FY_1_all = "EFFECTIVE_DATE_FY_1",
-         EFFECTIVE_DATE_FY_2_all = "EFFECTIVE_DATE_FY_2",
-         FY_1_all = "FY_1",
-         FY_2_all = "FY_2") %>%
-  ungroup() %>%
-  select(-c(SUBSECTOR_USE, ZONE_USE, SPP_NAME))
+# # Expand SPP_NAME ALL fishing year
+# #mh_fy_expanded <- mh_fy3 %>%
+#   # Join to species list table by SPP_NAME, SPP_TYPE, and FMP
+#   full_join(., sp_info_use_s, by = c("FMP", "SPP_TYPE", "SPP_NAME")) %>%
+#   # Remove records from sp_info_use_s that do not apply to fishing year
+#   filter(!is.na(SECTOR_USE)) %>%
+#   mutate(COMMON_NAME_USE = case_when(is.na(COMMON_NAME_USE) ~ SPP_NAME,
+#                                       TRUE ~ COMMON_NAME_USE),
+#           SPECIES_ITIS_USE = case_when(is.na(SPECIES_ITIS_USE) ~ as.character(SPECIES_ITIS),
+#                                       TRUE ~ SPECIES_ITIS_USE)) %>%
+#   ungroup() %>%
+#   # Remove species expansion date variables
+#   # Remove cluster variable because when SPP_NAME = 'ALL' expanded it will have a different cluster ID from species specific fishing years
+#   select(-c(NEW_CLUSTER, SPECIES_ITIS, SCIENTIFIC_NAME, ADDED_SP_DATE, REMOVED_SP_DATE, SPP_TYPE, SPP_NAME)) %>%
+#   group_by(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPECIES_ITIS_USE, COMMON_NAME_USE) %>%
+#   arrange(EFFECTIVE_DATE_FY) %>%
+#   mutate(reg_order = rank(EFFECTIVE_DATE_FY))
+# 
+# # Identify changes in fishing year
+# # There are 55 clusters that change fishing year at one point in time
+# # Most have 1 change, but South Atlantic greater amberjack and black sea bass have 3 fishing year starts over time
+# chk_change <- mh_fy_expanded %>% group_by(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPECIES_ITIS_USE, COMMON_NAME_USE) %>% 
+#   summarize(N = n()) %>% filter(N != 1)
+# 
+# # Structure fishing year data to wide-form for joining to the rest of MH data
+# mh_fy_expanded_w <- mh_fy_expanded %>%
+#   pivot_wider(names_from = reg_order, values_from = c(EFFECTIVE_DATE_FY, FY)) %>%
+#   ungroup() 
+# 
+# # CHECK fishing year where we have known 3 changes over time
+# chk <- mh_fy_expanded %>% filter(FMP == 'SNAPPER-GROUPER FISHERY OF THE SOUTH ATLANTIC REGION', SECTOR_USE == 'RECREATIONAL', 
+#                                  COMMON_NAME_USE == 'AMBERJACK, GREATER', ZONE_USE == 'ALL')
+# # CHECK for duplicates 
+# chk_dups <- mh_fy_expanded_w %>%
+#   group_by(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPECIES_ITIS_USE, COMMON_NAME_USE) %>%
+#   summarise(nrecs = n())
+# if(any(chk_dups$nrecs) > 1){stop("You have duplicate records in the fishing year dataset ready to join")}
+# 
+# # Subset FY expansion for the join
+# # Fishing year for specific subsector and zone
+# mh_fy_expanded_sz <- mh_fy_expanded_w %>% filter(SUBSECTOR_USE != 'ALL', ZONE_USE != 'ALL') %>%
+#   rename(EFFECTIVE_DATE_FY_1_sz = "EFFECTIVE_DATE_FY_1",
+#          EFFECTIVE_DATE_FY_2_sz = "EFFECTIVE_DATE_FY_2",
+#          EFFECTIVE_DATE_FY_3_sz = "EFFECTIVE_DATE_FY_3",
+#          FY_1_sz = "FY_1",
+#          FY_2_sz = "FY_2",
+#          FY_3_sz = "FY_3")
+# # Fishing year for specific zone
+# mh_fy_expanded_z <- mh_fy_expanded_w %>% filter(ZONE_USE != 'ALL', SUBSECTOR_USE == 'ALL') %>%
+#   rename(EFFECTIVE_DATE_FY_1_z = "EFFECTIVE_DATE_FY_1",
+#          EFFECTIVE_DATE_FY_2_z = "EFFECTIVE_DATE_FY_2",
+#          EFFECTIVE_DATE_FY_3_z = "EFFECTIVE_DATE_FY_3",
+#          FY_1_z = "FY_1",
+#          FY_2_z = "FY_2",
+#          FY_3_z = "FY_3") %>%
+#   select(-SUBSECTOR_USE)
+# # Fishing year for all zones and subsectors for management types where species expanded
+# mh_fy_expanded_a <- mh_fy_expanded_w %>% filter(ZONE_USE == 'ALL', SUBSECTOR_USE == 'ALL') %>%
+#   rename(EFFECTIVE_DATE_FY_1_a = "EFFECTIVE_DATE_FY_1",
+#          EFFECTIVE_DATE_FY_2_a = "EFFECTIVE_DATE_FY_2",
+#          EFFECTIVE_DATE_FY_3_a = "EFFECTIVE_DATE_FY_3",
+#          FY_1_a = "FY_1",
+#          FY_2_a = "FY_2",
+#          FY_3_a = "FY_3") %>%
+#   select(-c(SUBSECTOR_USE, ZONE_USE))
+# # Fishing year for all zones and subsectors for management types where species NOT expanded
+# mh_fy_a <- mh_fy3 %>% 
+#   filter(ZONE_USE == 'ALL', SUBSECTOR_USE == 'ALL', SPP_NAME == 'ALL') %>%
+#   ungroup() %>%
+#   select(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPP_NAME, EFFECTIVE_DATE_FY, FY) %>%
+#   group_by(FMP, REGION, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, SPP_NAME) %>%
+#   arrange(EFFECTIVE_DATE_FY) %>%
+#   mutate(reg_order = rank(EFFECTIVE_DATE_FY)) %>%
+#   pivot_wider(names_from = reg_order, values_from = c(EFFECTIVE_DATE_FY, FY)) %>%
+#   rename(EFFECTIVE_DATE_FY_1_all = "EFFECTIVE_DATE_FY_1",
+#          EFFECTIVE_DATE_FY_2_all = "EFFECTIVE_DATE_FY_2",
+#          FY_1_all = "FY_1",
+#          FY_2_all = "FY_2") %>%
+#   ungroup() %>%
+#   select(-c(SUBSECTOR_USE, ZONE_USE, SPP_NAME))
+#   
+# # Add fishing year to all clusters 
+# mh_expanded2 <- mh_expanded %>%
+#   ungroup() %>%
+#   # When specific to a subsector and zone
+#   left_join(mh_fy_expanded_sz, by = c("REGION", "FMP", "SECTOR_USE", "ZONE_USE", "SUBSECTOR_USE",
+#                                    "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
+#   # When specific to a zone only
+#   left_join(mh_fy_expanded_z, by = c("REGION", "FMP", "SECTOR_USE", "ZONE_USE",
+#                                      "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
+#   # When general to all zones and subsectors for expanded mtypes
+#   left_join(mh_fy_expanded_a, by = c("REGION", "FMP", "SECTOR_USE",  
+#                                      "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
+#   # When general to all zones subsectors, and species for NOT expanded mtypes
+#   left_join(mh_fy_a, by = c("REGION", "FMP", "SECTOR_USE")) %>%
+#   # Take the first non-null value
+#   mutate(EFFECTIVE_DATE_FY_1 = coalesce(EFFECTIVE_DATE_FY_1_sz, EFFECTIVE_DATE_FY_1_z, EFFECTIVE_DATE_FY_1_a, EFFECTIVE_DATE_FY_1_all),
+#          EFFECTIVE_DATE_FY_2 = coalesce(EFFECTIVE_DATE_FY_2_sz, EFFECTIVE_DATE_FY_2_z, EFFECTIVE_DATE_FY_2_a, EFFECTIVE_DATE_FY_2_all),
+#          EFFECTIVE_DATE_FY_3 = coalesce(EFFECTIVE_DATE_FY_3_sz, EFFECTIVE_DATE_FY_3_z, EFFECTIVE_DATE_FY_3_a),
+#          FY_1 = coalesce(FY_1_sz, FY_1_z, FY_1_a, FY_1_all),
+#          FY_2 = coalesce(FY_2_sz, FY_2_z, FY_2_a, FY_2_all),
+#          FY_3 = coalesce(FY_3_sz, FY_3_z, FY_3_a)) %>%
+#   # Remove unnecessary columns from join
+#   select(-c(EFFECTIVE_DATE_FY_1_sz, EFFECTIVE_DATE_FY_1_z, EFFECTIVE_DATE_FY_1_a, EFFECTIVE_DATE_FY_1_all,
+#             EFFECTIVE_DATE_FY_2_sz, EFFECTIVE_DATE_FY_2_z, EFFECTIVE_DATE_FY_2_a, EFFECTIVE_DATE_FY_2_all,
+#             EFFECTIVE_DATE_FY_3_sz, EFFECTIVE_DATE_FY_3_z, EFFECTIVE_DATE_FY_3_a,
+#             FY_1_sz, FY_1_z, FY_1_a,
+#             FY_2_sz, FY_2_z, FY_2_a,
+#             FY_3_sz, FY_3_z, FY_3_a))
+#   
+# 
+# # CHECK: FMPs with a fishing year
+# chk_fmp <- mh_fy3 %>% ungroup() %>% select(FMP) %>% distinct()
+# # Identify records that are missing a fishing year for only the FMPs that have a reported fishing year
+# chk_fy <- mh_expanded2 %>% filter(is.na(EFFECTIVE_DATE_FY_1)) %>% select(REGULATION_ID, FMP, REGION, SECTOR_USE, SPECIES_ITIS_USE, COMMON_NAME_USE, EFFECTIVE_DATE_FY_1, FY_1) %>%
+#   group_by(FMP, COMMON_NAME_USE) %>%
+#   summarise(N = n()) %>%
+#   filter(FMP %in% chk_fmp)
+# if(nrow(chk_fy) > 0){stop("Regulations missing a fishing year")}
+# 
+# # Export data sets ####
+# # Export mh_expanded
+# #write.csv(mh_expanded, here("data", "processed", paste0("mh_expanded_", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
+# 
+#   # Subset to fully processed component of mh_expanded
+#   # These components will not need to be removed one processing accommodates the necessary logic
+#   cluster_drop <- mh_expanded2 %>%
+#     filter(MULTI_REG == 1 | 
+#              MANAGEMENT_STATUS_USE %in% c("DELAYED", "WITHDRAWN") |
+#              STATUS_TYPE == "RECURRING")
   
-# Add fishing year to all clusters 
-mh_expanded2 <- mh_expanded %>%
-  ungroup() %>%
-  # When specific to a subsector and zone
-  left_join(mh_fy_expanded_sz, by = c("REGION", "FMP", "SECTOR_USE", "ZONE_USE", "SUBSECTOR_USE",
-                                   "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
-  # When specific to a zone only
-  left_join(mh_fy_expanded_z, by = c("REGION", "FMP", "SECTOR_USE", "ZONE_USE",
-                                     "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
-  # When general to all zones and subsectors for expanded mtypes
-  left_join(mh_fy_expanded_a, by = c("REGION", "FMP", "SECTOR_USE",  
-                                     "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
-  # When general to all zones subsectors, and species for NOT expanded mtypes
-  left_join(mh_fy_a, by = c("REGION", "FMP", "SECTOR_USE")) %>%
-  # Take the first non-null value
-  mutate(EFFECTIVE_DATE_FY_1 = coalesce(EFFECTIVE_DATE_FY_1_sz, EFFECTIVE_DATE_FY_1_z, EFFECTIVE_DATE_FY_1_a, EFFECTIVE_DATE_FY_1_all),
-         EFFECTIVE_DATE_FY_2 = coalesce(EFFECTIVE_DATE_FY_2_sz, EFFECTIVE_DATE_FY_2_z, EFFECTIVE_DATE_FY_2_a, EFFECTIVE_DATE_FY_2_all),
-         EFFECTIVE_DATE_FY_3 = coalesce(EFFECTIVE_DATE_FY_3_sz, EFFECTIVE_DATE_FY_3_z, EFFECTIVE_DATE_FY_3_a),
-         FY_1 = coalesce(FY_1_sz, FY_1_z, FY_1_a, FY_1_all),
-         FY_2 = coalesce(FY_2_sz, FY_2_z, FY_2_a, FY_2_all),
-         FY_3 = coalesce(FY_3_sz, FY_3_z, FY_3_a)) %>%
-  # Remove unnecessary columns from join
-  select(-c(EFFECTIVE_DATE_FY_1_sz, EFFECTIVE_DATE_FY_1_z, EFFECTIVE_DATE_FY_1_a, EFFECTIVE_DATE_FY_1_all,
-            EFFECTIVE_DATE_FY_2_sz, EFFECTIVE_DATE_FY_2_z, EFFECTIVE_DATE_FY_2_a, EFFECTIVE_DATE_FY_2_all,
-            EFFECTIVE_DATE_FY_3_sz, EFFECTIVE_DATE_FY_3_z, EFFECTIVE_DATE_FY_3_a,
-            FY_1_sz, FY_1_z, FY_1_a,
-            FY_2_sz, FY_2_z, FY_2_a,
-            FY_3_sz, FY_3_z, FY_3_a))
-  
-
-# CHECK: FMPs with a fishing year
-chk_fmp <- mh_fy3 %>% ungroup() %>% select(FMP) %>% distinct()
-# Identify records that are missing a fishing year for only the FMPs that have a reported fishing year
-chk_fy <- mh_expanded2 %>% filter(is.na(EFFECTIVE_DATE_FY_1)) %>% select(REGULATION_ID, FMP, REGION, SECTOR_USE, SPECIES_ITIS_USE, COMMON_NAME_USE, EFFECTIVE_DATE_FY_1, FY_1) %>%
-  group_by(FMP, COMMON_NAME_USE) %>%
-  summarise(N = n()) %>%
-  filter(FMP %in% chk_fmp)
-if(nrow(chk_fy) > 0){stop("Regulations missing a fishing year")}
-
-# Export data sets ####
-# Export mh_expanded
-#write.csv(mh_expanded, here("data", "processed", paste0("mh_expanded_", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
-
-  # Subset to fully processed component of mh_expanded
-  # These components will not need to be removed one processing accommodates the necessary logic
-  cluster_drop <- mh_expanded2 %>%
-    filter(MULTI_REG == 1 | 
-             MANAGEMENT_STATUS_USE %in% c("DELAYED", "WITHDRAWN") |
-             STATUS_TYPE == "RECURRING")
-  
-  mh_analysis_ready <-  mh_expanded2 %>%
-    filter(!CLUSTER %in% cluster_drop$CLUSTER,
-           NEVER_IMPLEMENTED == 0) %>%
+  mh_data_log <-  mh_expanded %>%
+    #filter(!CLUSTER %in% cluster_drop$CLUSTER,
+           #NEVER_IMPLEMENTED == 0) %>%
     select(CLUSTER, REGULATION_ID, FR_CITATION, FR_URL, FMP, ACTION, ACTION_TYPE, AMENDMENT_NUMBER, ACCOUNTABILITY_MEASURE,
            MANAGEMENT_CATEGORY, MANAGEMENT_TYPE_USE, MANAGEMENT_STATUS_USE, STATUS_TYPE, DETAILED,
            JURISDICTION, SECTOR_USE, SUBSECTOR_USE, REGION,ZONE_USE, JURISDICTIONAL_WATERS,
@@ -304,9 +304,7 @@ if(nrow(chk_fy) > 0){stop("Regulations missing a fishing year")}
            START_MONTH, START_DAY_USE, START_YEAR, START_TIME_USE, START_DAY_OF_WEEK_USE, 
            END_MONTH_USE, END_DAY_USE, END_YEAR, END_TIME_USE, END_DAY_OF_WEEK_USE, 
            VALUE, VALUE_UNITS,VALUE_TYPE,VALUE_RATE,
-           MULTI_REG, MULTI_REG_CLUSTER, REG_REMOVED, FLAG,
-           EFFECTIVE_DATE_FY_1, FY_1, EFFECTIVE_DATE_FY_2, FY_2, EFFECTIVE_DATE_FY_3, FY_3)
+           MULTI_REG, MULTI_REG_CLUSTER, REG_REMOVED, FLAG)
+           #EFFECTIVE_DATE_FY_1, FY_1, EFFECTIVE_DATE_FY_2, FY_2, EFFECTIVE_DATE_FY_3, FY_3)
   
-  # Export mh_analysis_ready
-  #write.csv(mh_analysis_ready, here("data", "processed", paste0("mh_analysis_ready_", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
   
