@@ -11,6 +11,14 @@ This folder contains the raw Management History data downloaded from the Online 
 ## examples/
 This folder contains example outputs that replicate tables and datasets used in the SouthEast Data and Assessment and Review ([SEDAR](https://sedarweb.org/)) process.
 
+## Products
+The records contained the Management History dataset have been used to create SEDAR working papers to assist with the assessment process. These working papers are outlined below for reference.
+
+- SEDAR 74 Gulf of Mexico Red Snapper - [SEDAR74-DW-25](https://sedarweb.org/documents/sedar-74-dw-25-summary-of-management-actions-for-red-snapper-lutjanus-campechanus-from-the-gulf-of-mexico-1984-2022-as-documented-within-the-management-history-database/)
+- SEDAR 80 Caribbean Queen Triggerfish - [SEDAR80-WP-11](https://sedarweb.org/documents/sedar-80-wp-11-summary-of-closure-management-actions-for-the-reef-fish-fishery-of-puerto-rico-and-the-u-s-virgin-islands-as-documented-within-the-management-history-database/)
+- SEDAR 81 Gulf of Mexico Spanish Mackerel - [SEDAR81-WP-01](https://sedarweb.org/documents/sedar-81-wp-01-summary-of-management-actions-for-spanish-mackerel-scomberomorus-maculatus-from-the-gulf-of-mexico-as-documented-within-the-management-history-database%ef%bf%bc/)
+- SEDAR 82 South Atlantic Gray Triggerfish - [SEDAR82-DW02](https://sedarweb.org/documents/sedar-82-dw02-summary-of-management-actions-for-gray-triggerfish-balistes-capriscus-from-the-south-atlantic-as-documented-within-the-management-history-database/)
+
 # Disclamer:
 
 The Management History database is for general information purposes only. Any discrepancies between this information and the regulations as published in official sources of information, such as the Federal Register and Code of Federal Regulations will be resolved in favor of the official sources.
