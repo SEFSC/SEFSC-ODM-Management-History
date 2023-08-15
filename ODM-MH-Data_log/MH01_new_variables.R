@@ -19,7 +19,7 @@ mh_sect_expanded <- mh_cleaned %>%
 
 # Add "DETAILED" YES/NO field (from Google Sheets) based on MANAGEMENT_TYPE ####
 # Read in file outlining whether a MANAGEMENT_TYPE is detailed (Y/N)
-detailed_xref <- read.csv(here('data/raw', "mtype_detailed_xref.csv"),
+detailed_xref <- read.csv(here('ODM-MH-Data_log', 'data/raw', "mtype_detailed_xref.csv"),
                           stringsAsFactors = FALSE,
                           fileEncoding = 'Windows-1252') %>%
   select(-MANAGEMENT_CATEGORY)
@@ -56,7 +56,7 @@ detailed_xref <- read.csv(here('data/raw', "mtype_detailed_xref.csv"),
 # Translate from old ZONE names to new ZONE names ####
 # Read in file that outlines new ZONE names for all FMPs
 # These ZONEs were cleaned up for consistency
-area_xref <- read.csv(here('data/raw', "zone_name_xref.csv"),
+area_xref <- read.csv(here('ODM-MH-Data_log', 'data/raw', "zone_name_xref.csv"),
                       stringsAsFactors = FALSE,
                       fileEncoding = 'Windows-1252') %>%
   # Create single variable for ZONE_USE
