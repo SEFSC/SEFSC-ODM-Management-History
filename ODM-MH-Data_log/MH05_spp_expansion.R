@@ -36,7 +36,7 @@ mh_sp_expanded_y1 <- mh_dates %>%
   # Filter to remove non-DETAILED records
   filter(DETAILED == 'YES') %>%
   # Join to species list table by SPP_NAME, SPP_TYPE, and FMP
-  full_join(., sp_info_use_s, by = c("FMP", "SPP_TYPE", "SPP_NAME")) %>%
+  full_join(., sp_info_use_s, by = join_by("FMP", "SPP_TYPE", "SPP_NAME"), relationship = "many-to-many") %>%
   # Remove SPECIES_GROUP and SPECIES_AGGREGATE that do not appear in the data set or are regulated by FMPs that are not in the data set (i.e., HMS)
   filter(!is.na(REGULATION_ID)) %>%
   mutate(COMMON_NAME_USE = case_when(is.na(COMMON_NAME_USE) ~ SPP_NAME,
@@ -54,7 +54,7 @@ mh_sp_expanded_y2 <- mh_dates %>%
   # Filter to remove non-DETAILED records
   filter(DETAILED == 'YES') %>%
   # Join to species list table by SPP_NAME, SPP_TYPE, and FMP
-  full_join(., sp_info_use_m, by = c("FMP", "SPP_TYPE", "SPP_NAME")) %>%
+  full_join(., sp_info_use_m, by = join_by("FMP", "SPP_TYPE", "SPP_NAME"), relationship = "many-to-many") %>%
   # Remove SPECIES_GROUP and SPECIES_AGGREGATE that do not appear in the dataset or are regulated by FMPs that are not in the dataset (i.e. HMS)
   filter(!is.na(REGULATION_ID), !is.na(ADDED_SP_DATE)) %>%
   mutate(COMMON_NAME_USE = case_when(is.na(COMMON_NAME_USE) ~ SPP_NAME,
