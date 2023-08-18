@@ -9,10 +9,9 @@ This folder includes files used to generate tables matching those submitted in S
 **BAG LIMITS**
 
 <ins>Red Grouper in the Gulf of Mexico</ins>
-![Red grouper bag limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/a3267e28-05a3-4dc7-a2dd-1c79977c6d11)
+![Red grouper bag limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/9571e870-b5c3-44db-a481-b6c226990a43)
 
 **SIZE LIMITS** 
 
 <ins>Red Grouper in the Gulf of Mexico</ins>
-![Red grouper size limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/5ad2338f-6328-4d43-af0e-32b8ff957667)
-
+![Red grouper size limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/07dcdaef-da51-4a10-a629-41e85a6c5ec0)
