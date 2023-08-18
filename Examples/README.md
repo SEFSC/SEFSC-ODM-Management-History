@@ -16,6 +16,13 @@ This folder includes files used to generate tables matching those submitted in S
 
 **SIZE LIMITS** 
 
-
 <ins>Red Grouper in the Gulf of Mexico</ins>
 ![Red grouper size limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/07dcdaef-da51-4a10-a629-41e85a6c5ec0)
+
+<ins>Red Snapper in the Gulf of Mexico</ins>
+
+![Red snapper size limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/d6441c04-fea6-4073-8495-b3299d32e2d8)
+
+
+
+
