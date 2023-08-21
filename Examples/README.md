@@ -21,9 +21,10 @@ This folder includes files used to generate tables matching those submitted in S
 
 <ins>Recreational Red Snapper in the Gulf of Mexico</ins>
 
-![Red snapper size limits rec](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/9b7016c5-67ad-4f48-a0d4-e77a20cc1724)
+![Red snapper size limits rec](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/7140dd05-0a5c-46c9-b505-185b99eb938f)
 
+<ins>Commercial Red Snapper in the Gulf of Mexico</ins>
 
-
+![Red snapper size limits com](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/3c9e87ec-b852-4c9b-8cfa-aaeac6f449f7)
 
 
