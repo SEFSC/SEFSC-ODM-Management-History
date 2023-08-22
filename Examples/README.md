@@ -18,6 +18,10 @@ This folder includes files used to generate tables matching those submitted in S
 <ins>Queen Triggerfish in the South Atlantic</ins>
 ![Queen triggerfish recreational bag limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/7d68e79f-6eee-4480-800d-dd01220b1300)
 
+<ins>***CREW BAG LIMITS***</ins>
+
+<ins>Red Snapper in the Gulf of Mexico</ins>
+![red snapper crew bag limit](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/dccba9ab-54df-45f9-b46c-845b07514e73)
 
 <ins>**SIZE LIMITS**</ins> 
 
