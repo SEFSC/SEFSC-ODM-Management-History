@@ -7,6 +7,11 @@ This folder includes files used to generate tables matching those submitted in S
 
 # Created tables
 
+<ins>**ACL**</ins>
+
+<ins>Recreational Gray Triggerfish in the South Atlantic</ins>
+![Queen triggerfish rec acl](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/9fd0aaec-b440-442c-9bc8-361039d60931)
+
 <ins>**BAG LIMITS**</ins>
 
 <ins>Red Grouper in the Gulf of Mexico</ins>
@@ -54,3 +59,9 @@ This folder includes files used to generate tables matching those submitted in S
 
 <ins>Commercial Queen Triggerfish in the South Atlantic</ins>
 ![Queen triggerfish commercial trip limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/77c00749-b99a-4f2e-9bff-e3a9151421d1)
+
+<ins>**QUOTA**</ins>
+
+<ins>Recreational Spanish Mackerel in the Gulf of Mexico</ins>
+![Spanish mackerel rec quota](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/58c587ac-484f-4c29-9ab6-cdea888de46c)
+
