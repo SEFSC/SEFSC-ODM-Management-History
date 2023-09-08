@@ -29,25 +29,7 @@ source(here('ODM-MH-Data_log', 'main_MH_prep.R'))
 # Commercial size limit Gulf red grouper - 165
 # Recreational size limit Gulf red grouper - 465
 
-test <- mh_data_log %>% filter(CLUSTER %in% c(952, 365, 199, 220, 128, 200,
-                                                    1904, 951, 241, 952, 1994, 1527,
-                                                    19, 20, 1268, 1267, 1266, 1265, 1210, 1098, 1097,
-                                                    51, 52, 640, 641, 642, 643, 70, 71, 552, 553,
-                                                    577, 519, 520, 162, 164, 165, 465)) %>%
-  arrange(CLUSTER, ZONE_USE, START_DATE2)
-
-# Save mh_data_log as csv
-write.csv(mh_data_log, here("Examples", "Tables", paste0("mh_data_log", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
-
-# Save test data set as csv
-write.csv(test, here("Examples", "Tables", paste0("mhtest_", format(Sys.Date(), "%Y%m%d"), ".csv")), row.names = FALSE)
-
-# Save test data set
-saveRDS(test, here('Examples/Tables', 'MH_test_data.RDS'))
-
-view(mh_data_log)
-
-
+mh_tables_use <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2023SEP08.RDS"))
 
 # Gulf red grouper tables
 spp = 'GROUPER, RED'
@@ -55,7 +37,7 @@ region = 'GULF OF MEXICO'
 
 # Table for Bag Limits
 #Filter data and combine column information
-bag_tab1 <- mh_data_log %>%
+bag_tab1 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'BAG LIMIT', SPP_TYPE == 'COMMON_NAME') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   arrange(FR_CITATION) %>%
@@ -96,13 +78,13 @@ bag_tab2 <- bag_tab1 %>%
   fontsize(part = "all", size = 12) %>%
   font(part = "all", fontname = "Times New Roman") %>%
   align(part = "all", align = "center") %>%
-  set_caption(paste0(bag_tab1$REGION, " ", bag_tab1$COMMON_NAME_USE, " ", bag_tab1$MANAGEMENT_TYPE_USE)))
+  set_caption(paste0(bag_tab1$REGION, " ", bag_tab1$COMMON_NAME_USE, " ", bag_tab1$MANAGEMENT_TYPE_USE, collapse = ",")))
 
 bag_tab2$tab[[1]]
 
 #Table for Recreational Size Limits
 #Filter data and combine column information
-size_tab1 <- mh_data_log %>%
+size_tab1 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS', SECTOR_USE == 'RECREATIONAL') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -140,7 +122,7 @@ size_tab2$tab[[1]]
 
 #Table for Commercial Size Limits
 #Filter data and combine column information
-size_tab3 <- mh_data_log %>%
+size_tab3 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS', SECTOR_USE == 'COMMERCIAL') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -184,7 +166,7 @@ region1 = 'GULF OF MEXICO'
 
 # Table for Bag Limits
 #Filter data and combine column information
-bag_tab5 <- mh_data_log %>%
+bag_tab5 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp1, REGION == region1, MANAGEMENT_TYPE_USE == 'BAG LIMIT') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -220,7 +202,7 @@ bag_tab6$tab[[1]]
 
 # Table for Crew Bag Limits
 #Filter data and combine column information
-crewbag_tab <- mh_data_log %>%
+crewbag_tab <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp1, REGION == region1, MANAGEMENT_TYPE_USE == 'CREW BAG LIMIT') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -257,7 +239,7 @@ crewbag_tab1$tab[[1]]
 
 #Table for Recreational Size Limits
 #Filter data and combine column information
-size_tab7 <- mh_data_log %>%
+size_tab7 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp1, REGION == region1, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS', SECTOR_USE == 'RECREATIONAL') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -296,7 +278,7 @@ size_tab8$tab[[1]]
 
 #Table for Commercial Size Limits
 #Filter data and combine column information
-size_tab9 <- mh_data_log %>%
+size_tab9 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp1, REGION == region1, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS', SECTOR_USE == 'COMMERCIAL') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -342,7 +324,7 @@ zone02 = 'ALL'
 
 # Table for Bag Limits
 #Filter data and combine column information
-bag_tab11 <- mh_data_log %>%
+bag_tab11 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp2, REGION == region2, ZONE_USE == zone2, MANAGEMENT_TYPE_USE == 'BAG LIMIT') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -378,7 +360,7 @@ bag_tab12$tab[[1]]
 
 #Table for Recreational Size Limits
 #Filter data and combine column information
-size_tab13 <- mh_data_log %>%
+size_tab13 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp2, REGION == region2, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS', SECTOR_USE == 'RECREATIONAL') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -417,7 +399,7 @@ size_tab14$tab[[1]]
 
 #Table for Commercial Size Limits
 #Filter data and combine column information
-size_tab15 <- mh_data_log %>%
+size_tab15 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp2, REGION == region2, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS', SECTOR_USE == 'COMMERCIAL') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -456,7 +438,7 @@ size_tab16$tab[[1]]
 
 # Table for Recreational Quota
 #Filter data and combine column information
-recquo_tab27 <- mh_data_log %>%
+recquo_tab27 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp2, REGION == region2, MANAGEMENT_TYPE_USE == 'QUOTA', SECTOR_USE == 'RECREATIONAL') %>%
   filter(NEVER_IMPLEMENTED == 0, REG_REMOVED == 0) %>%
   ungroup() %>%
@@ -499,7 +481,7 @@ region3 = 'SOUTH ATLANTIC'
 
 # Table for Bag Limits
 #Filter data and combine column information
-bag_tab17 <- mh_data_log %>%
+bag_tab17 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp3, REGION == region3, MANAGEMENT_TYPE_USE == 'BAG LIMIT') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -535,7 +517,7 @@ bag_tab18$tab[[1]]
 
 #Table for Recreational Size Limits
 #Filter data and combine column information
-size_tab19 <- mh_data_log %>%
+size_tab19 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp3, REGION == region3, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS', SECTOR_USE == 'RECREATIONAL') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -575,7 +557,7 @@ size_tab20$tab[[1]]
 
 #Table for Commercial Size Limits
 #Filter data and combine column information
-size_tab21 <- mh_data_log %>%
+size_tab21 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp3, REGION == region3, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS', SECTOR_USE == 'COMMERCIAL') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -614,7 +596,7 @@ size_tab22$tab[[1]]
 
 #Table for Commercial Trip Limits
 #Filter data and combine column information
-bag_tab23 <- mh_data_log %>%
+bag_tab23 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp3, REGION == region3, MANAGEMENT_TYPE_USE == 'TRIP LIMIT') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
@@ -649,7 +631,7 @@ bag_tab24$tab[[1]]
 
 # Table for Recreational ACL
 #Filter data and combine column information
-recacl_tab25 <- mh_data_log %>%
+recacl_tab25 <- mh_tables_use %>%
   filter(COMMON_NAME_USE == spp3, REGION == region3, MANAGEMENT_TYPE_USE == 'ACL', SECTOR_USE == 'RECREATIONAL') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
