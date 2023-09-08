@@ -2,17 +2,19 @@
 
 This SEFSC - ODM - Management History repository provides a method for generating an analysis-ready version of the Management History Database. In their original format, the records in this database represent changes in management actions affecting federally managed species throughout the Gulf of Mexico, South Atlantic, and U.S. Caribbean regions. The data files and code contained in this repository define and execute logic for grouping and creating streamlined time series of related management events. This process is actively being updated. Draft metadata can be found [here](https://docs.google.com/document/d/1P229OLxEG_iIS31VEbKlKiW2jmiFPKfn5N9Vr9xG4dM/edit#heading=h.gjdgxs).
 
-## code/
-This folder contains the standard processing code for generating an analysis-ready dataset. The metadata for this code can be found [here](https://docs.google.com/document/d/1FXv0kkcQRFgHativf3xW3v7-eQLyTDvb/edit#).
+This repository is structured into the following folders:
 
-## data/
-This folder contains the raw Management History data downloaded from the Online Database Manager (ODM). Additional csv files for grouping the data and cleaning up reported zone names are also found here.
+### ODM-MH-Data-Log/
+This folder contains the standard code for processing the raw Management History data downloaded from the Online Database Manager (ODM). The main steps in this procedure include creating necessary grouping variables as well as filling in end dates for each management action. The result of this code is a RDS file which is used in the ODM-MH-Analysis-Ready scripts. The metadata for this code can be found [here](https://docs.google.com/document/d/1FXv0kkcQRFgHativf3xW3v7-eQLyTDvb/edit#).
 
-## examples/
+### ODM-MH-Analysis-Ready/
+This folder contains the standard code for processing the MH Data Log RDS file into an analysis-ready dataset. The result of this code is a RDS file which is used in the Examples folder.
+
+### Examples/
 This folder contains example outputs that replicate tables and datasets used in the SouthEast Data and Assessment and Review ([SEDAR](https://sedarweb.org/)) process.
 
 ## Products
-The records contained the Management History dataset have been used to create SEDAR working papers to assist with the assessment process. These working papers are outlined below for reference.
+The Management History dataset have been used to create SEDAR working papers to assist with the assessment process. These working papers are outlined below for reference.
 
 - SEDAR 74 Gulf of Mexico Red Snapper - [SEDAR74-DW-25](https://sedarweb.org/documents/sedar-74-dw-25-summary-of-management-actions-for-red-snapper-lutjanus-campechanus-from-the-gulf-of-mexico-1984-2022-as-documented-within-the-management-history-database/)
 - SEDAR 80 Caribbean Queen Triggerfish - [SEDAR80-WP-11](https://sedarweb.org/documents/sedar-80-wp-11-summary-of-closure-management-actions-for-the-reef-fish-fishery-of-puerto-rico-and-the-u-s-virgin-islands-as-documented-within-the-management-history-database/)
