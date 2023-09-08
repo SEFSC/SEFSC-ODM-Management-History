@@ -61,4 +61,4 @@ source(here('ODM-MH-Data_log', 'MH05_spp_expansion.R'))
 # Closure, fishing year, and fishing season
 
 # Save environment as .RDS file for testing against a static result
-saveRDS(mh_data_log, here("ODM-MH-Data_log", "data", "results", paste0('MH_AL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
+saveRDS(mh_data_log, here("ODM-MH-Data_log", "data", "results", paste0('MH_DL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
