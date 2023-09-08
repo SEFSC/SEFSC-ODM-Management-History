@@ -2,7 +2,7 @@
 
 # Load packages ####
 #install.packages("librarian")
-librarian::shelf(here, tidyverse, gt, flextable, officer, dplyr)
+librarian::shelf(here, tidyverse, gt, flextable, officer, dplyr, gt)
 
 # RUN MH CODE
 here::i_am('Examples/Tables/MH_tables.R')
@@ -58,6 +58,7 @@ region = 'GULF OF MEXICO'
 bag_tab1 <- mh_data_log %>%
   filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'BAG LIMIT', SPP_TYPE == 'COMMON_NAME') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
   ungroup() %>%
   mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
          END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
@@ -75,7 +76,7 @@ bag_tab1 <- mh_data_log %>%
 bag_tab2 <- bag_tab1 %>%
   select(COMMON_NAME_USE, SECTOR1, ZONE1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
   do(tab = flextable(.[1:10]) %>%
-       set_header_labels(SECTOR2 = "Fishery",
+       set_header_labels(SECTOR1 = "Fishery",
                          ZONE1 = "Region Affected",
                          START_YEAR1 = "Start Year",
                          START_DATE1 = "Effective Date",
@@ -84,7 +85,18 @@ bag_tab2 <- bag_tab1 %>%
                          FR_CITATION = "FR Reference(s)",
                          ACTION1 = "Amendment Number or Rule Type",
                          COMMON_NAME_USE = "Species",
-                         MANAGEMENT_TYPE_USE = "Management Type"))
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+  merge_v(j = 1, part = "body") %>%
+  merge_v(j = 2, part = "body") %>%
+  merge_v(j = 3, part = "body") %>%
+  merge_v(j = 4, part = "body") %>%
+    theme_box() %>%
+  hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+  hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+  fontsize(part = "all", size = 12) %>%
+  font(part = "all", fontname = "Times New Roman") %>%
+  align(part = "all", align = "center") %>%
+  set_caption(paste0(bag_tab1$REGION, " ", bag_tab1$COMMON_NAME_USE, " ", bag_tab1$MANAGEMENT_TYPE_USE)))
 
 bag_tab2$tab[[1]]
 
@@ -325,11 +337,13 @@ size_tab10$tab[[1]]
 
 spp2 = 'MACKEREL, SPANISH'
 region2 = 'GULF OF MEXICO'
+zone2 = 'GULF MIGRATORY GROUP SPANISH MACKEREL'
+zone02 = 'ALL'
 
 # Table for Bag Limits
 #Filter data and combine column information
 bag_tab11 <- mh_data_log %>%
-  filter(COMMON_NAME_USE == spp2, REGION == region2, MANAGEMENT_TYPE_USE == 'BAG LIMIT') %>%
+  filter(COMMON_NAME_USE == spp2, REGION == region2, ZONE_USE == zone2, MANAGEMENT_TYPE_USE == 'BAG LIMIT') %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
   ungroup() %>%
   mutate(START_DATE7 = format(START_DATE2, "%m/%d/%Y"),
@@ -438,6 +452,44 @@ size_tab16 <- size_tab15 %>%
                          COMMON_NAME_USE = "Species"))
 
 size_tab16$tab[[1]]
+
+
+# Table for Recreational Quota
+#Filter data and combine column information
+recquo_tab27 <- mh_data_log %>%
+  filter(COMMON_NAME_USE == spp2, REGION == region2, MANAGEMENT_TYPE_USE == 'QUOTA', SECTOR_USE == 'RECREATIONAL') %>%
+  filter(NEVER_IMPLEMENTED == 0, REG_REMOVED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE15 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE15 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR15 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE15 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE15 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                             FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION15 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                              is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                              !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                              !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR15 = format(START_DATE2, "%Y"))
+
+#Create table
+recquo_tab28 <- recquo_tab27 %>%
+  select(COMMON_NAME_USE, SECTOR15, ZONE15, MANAGEMENT_TYPE_USE, START_YEAR15, START_DATE15, END_DATE15, VALUE15, VALUE_TYPE, FR_CITATION, ACTION15)%>%
+  arrange(ZONE15) %>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR15 = "Fishery",
+                         ZONE15 = "Region Affected",
+                         START_YEAR15 = "Start Year",
+                         START_DATE15 = "Effective Date",
+                         END_DATE15 = "End Date",
+                         VALUE15 = "Quota",
+                         VALUE_TYPE = "Weight Type",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION15 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type"))
+
+recquo_tab28$tab[[1]]
 
 
 # South Atlantic gray triggerfish tables
@@ -594,3 +646,40 @@ bag_tab24 <- bag_tab23 %>%
                          MANAGEMENT_TYPE_USE = "Management Type"))
 
 bag_tab24$tab[[1]]
+
+# Table for Recreational ACL
+#Filter data and combine column information
+recacl_tab25 <- mh_data_log %>%
+  filter(COMMON_NAME_USE == spp3, REGION == region3, MANAGEMENT_TYPE_USE == 'ACL', SECTOR_USE == 'RECREATIONAL') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE14 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE14 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR14 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE14 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE14 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                             FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION14 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                              is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                              !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                              !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR14 = format(START_DATE2, "%Y"))
+
+#Create table
+recacl_tab26 <- recacl_tab25 %>%
+  select(COMMON_NAME_USE, SECTOR14, ZONE14, MANAGEMENT_TYPE_USE, START_YEAR14, START_DATE14, END_DATE14, VALUE14, VALUE_TYPE, FR_CITATION, ACTION14)%>%
+  arrange(ZONE14) %>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR14 = "Fishery",
+                         ZONE14 = "Region Affected",
+                         START_YEAR14 = "Start Year",
+                         START_DATE14 = "Effective Date",
+                         END_DATE14 = "End Date",
+                         VALUE14 = "ACL",
+                         VALUE_TYPE = "Weight Type",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION14 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type"))
+
+recacl_tab26$tab[[1]]
