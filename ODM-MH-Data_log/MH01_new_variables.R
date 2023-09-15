@@ -177,11 +177,13 @@ mh_newvar <- mh_setup %>%
          END_DATE = case_when(END_TIME == "12:01:00 AM" ~ END_DATE - 1,
                               TRUE ~ END_DATE),
          # Adjust the end day, time, and day of the week accordingly  
-         # When end tie is 12:01, use the day of end date because the year of February already factored in to determine if its the 28th or 29th
+         # When end time is 12:01, use the day of end date because the year of February already factored in to determine if its the 28th or 29th
          END_DAY_USE = case_when(END_TIME == "12:01:00 AM" & !is.na(END_DATE) ~ as.numeric(day(END_DATE)),
                              TRUE ~ END_DAY),
          END_MONTH_USE = case_when(END_TIME == "12:01:00 AM" & !is.na(END_DATE) ~ as.numeric(month(END_DATE)),
                                  TRUE ~ END_MONTH),
+         END_YEAR_USE = case_when(END_TIME == "12:01:00 AM" & END_MONTH == 1 & END_DAY == 1 ~ END_YEAR - 1,
+                                  TRUE ~ END_YEAR),
          # Retain end time of 12:01 only for recurring regulations where the end day is the 1st
          # Otherwise remove 12:01 from end time or use the reported end time
          END_TIME_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY == 1 ~ END_TIME,
