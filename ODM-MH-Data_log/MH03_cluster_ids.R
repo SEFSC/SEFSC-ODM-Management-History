@@ -50,7 +50,7 @@ new_clusters <- mh_subsect_expanded %>%
   # Export new CLUSTERs
   if(length(new_clusters$CLUSTER) > 0) {
     write_csv(new_clusters, 
-              here("data/interim/clusters", paste0("mh_unique_clusters_", format(Sys.Date(), "%d%b%Y"),".csv")))
+              here("ODM-MH-Data_log/data/interim/clusters", paste0("mh_unique_clusters_", format(Sys.Date(), "%d%b%Y"),".csv")))
   }
   
   # Alert the user that new clusters were created
