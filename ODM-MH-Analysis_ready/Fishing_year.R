@@ -6,7 +6,7 @@
 librarian::shelf(here, tidyverse)
 
 # Read in MH Data Log
-mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_AL_2023Aug15.RDS"))
+mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2023Sep14.RDS"))
 
 # Recode regulations entered as FISHING SEASON to FISHING YEAR
 # Filter for only fishing season management type
@@ -27,15 +27,11 @@ mh_fs_ck2 <- mh_fs2 %>%
   # Create as date field to subtract (the year is not important here)
   mutate(START_FY = case_when(!is.na(START_MONTH) & !is.na(START_DAY_USE) & is.na(START_YEAR) ~ as.Date(paste0("2023-", START_MONTH, "-", START_DAY_USE), "%Y-%m-%d"),
                               !is.na(START_MONTH) & !is.na(START_DAY_USE) & !is.na(START_YEAR) ~ as.Date(paste0(START_YEAR, "-", START_MONTH, "-", START_DAY_USE), "%Y-%m-%d")),
-         END_FY = case_when(!is.na(END_MONTH_USE) & !is.na(END_DAY_USE) & is.na(END_YEAR) ~ as.Date(paste0("2023-", END_MONTH_USE, "-", END_DAY_USE), "%Y-%m-%d"),
-                            !is.na(END_MONTH_USE) & !is.na(END_DAY_USE) & !is.na(END_YEAR) ~ as.Date(paste0(END_YEAR, "-", END_MONTH_USE, "-", END_DAY_USE), "%Y-%m-%d")),
+         END_FY = case_when(!is.na(END_MONTH_USE) & !is.na(END_DAY_USE) & is.na(END_YEAR_USE) ~ as.Date(paste0("2023-", END_MONTH_USE, "-", END_DAY_USE), "%Y-%m-%d"),
+                            !is.na(END_MONTH_USE) & !is.na(END_DAY_USE) & !is.na(END_YEAR_USE) ~ as.Date(paste0(END_YEAR_USE, "-", END_MONTH_USE, "-", END_DAY_USE), "%Y-%m-%d")),
          DIFF = case_when(END_MONTH_USE >= START_MONTH ~ END_FY - START_FY,
                           END_MONTH_USE < START_MONTH ~ START_FY - END_FY)) %>%
   filter(N_seasons == 1)
-
-# Fishing season more than 365 days
-fs_gt365 <- mh_fs_ck2 %>%
-  filter(abs(DIFF) > 365) %>% select(REGULATION_ID, FR_CITATION, FR_URL) %>% distinct()
 
 # Recode fishing season records as fishing year if 365 days
 fs_to_fy <- mh_fs_ck2 %>% ungroup() %>%
