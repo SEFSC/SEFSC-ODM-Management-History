@@ -53,7 +53,7 @@ new_sector_clusters <- mh_newvar %>%
   # WRITE: export new sector groupings into mh_sector_clusters_ CSV 
   if(length(new_sector_clusters$SECTOR_ID) > 0) {
     write_csv(new_sector_clusters, 
-              here('data/interim/sector_clusters', paste0("mh_sector_clusters_", format(Sys.Date(), "%d%b%Y"),".csv")))
+              here('ODM-MH-Data_log/data/interim/sector_clusters', paste0("mh_sector_clusters_", format(Sys.Date(), "%d%b%Y"),".csv")))
   }
   
   # Alert the user that new clusters were created
