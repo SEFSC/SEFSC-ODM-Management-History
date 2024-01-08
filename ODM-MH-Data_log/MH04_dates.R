@@ -166,14 +166,14 @@ mh_dates <- mh_reversions %>%
                               TRUE ~ CHANGE_DATE),
          # CREATE: the variable of NEVER_IMPLEMENTED to signify regulations that were created but never went into effect
          # When the MULTI_REG_VALUE variable is flagged (1), NEVER_IMPLEMENTED should not be flagged (0) meaning the regulation did go into effect
-         # When the MULTI_REG_CLOSURE variable is flagged (1), NEVER_IMPLEMENTED should not be flagged (0) meaning the regulation did go into effect
+         # When the MULTI_REG_SEASONAL variable is flagged (1), NEVER_IMPLEMENTED should not be flagged (0) meaning the regulation did go into effect
          # When the diff_days variable is less than or equal to -1, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
          # When the START_DATE_USE is after the END_DATE, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
          # When MULTI_REG_FORECAST is flagged (1) and the START_DATE_USE is equal to the START_DATE_USE of a later FR_CITATION, then NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
-         NEVER_IMPLEMENTED = case_when(MULTI_REG_VALUE == 1 ~ 0,
-                                       MULTI_REG_CLOSURE == 1 ~ 0,
+         NEVER_IMPLEMENTED = case_when(START_DATE_USE > END_DATE ~ 1,
+                                       MULTI_REG_VALUE == 1 ~ 0,
+                                       MULTI_REG_SEASONAL == 1 ~ 0,
                                        diff_days <= -1 ~ 1,
-                                       START_DATE_USE > END_DATE ~ 1,
                                        MULTI_REG_FORECAST == 1 & START_DATE_USE == max(START_DATE_USE[FR_CITATION > FR_CITATION]) ~ 1,
                                        TRUE ~ 0),
          # ADJUST THE START DATE AND START TIME FOR CLUSTER 306 WHEN THE REOPENING ENDS IN THE MIDDLE OF THE DAY
