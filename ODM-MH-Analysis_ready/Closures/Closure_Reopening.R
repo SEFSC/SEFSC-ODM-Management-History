@@ -4,16 +4,16 @@
 librarian::shelf(here, tidyverse, lubridate, dplyr, tidyr, neatRanges, splitstackshape)
 
 # Read in MH Data log ####
-mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2023Nov13.RDS"))
-
-# Select species and region ####
-spp <- 'SNAPPER, YELLOWTAIL'
-region <- 'CARIBBEAN'
+# mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2023Nov13.RDS"))
+# 
+# # Select species and region ####
+# spp <- 'PORGY, RED'
+# region <- 'SOUTH ATLANTIC'
 
 # Seasonal Closures ####
 # Filter dataset to seasonal closure regulations for the specified species and region
-Seasonal_closures <- mh_data_log %>%
-  filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'SEASONAL', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0, COMMON_NAME_USE == spp, REGION == region)
+Seasonal_closures <- mh_spp_closure %>%
+  filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'SEASONAL', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0)
 
 # Create date_sequence to expand dates between EFFECTIVE_DATE and END_DATE2 
 expand_seasonal <- Seasonal_closures %>%
