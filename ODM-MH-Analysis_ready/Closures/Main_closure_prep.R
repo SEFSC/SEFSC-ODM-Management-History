@@ -8,8 +8,8 @@ librarian::shelf(here, tidyverse, lubridate, dplyr, tidyr, neatRanges, splitstac
 mh_data_log <- readRDS(here("ODM-MH-Analysis_ready", "results", "MH_DL_wFY_2024Jan19.RDS"))
 
 # Select species and region
-spp <- 'TRIGGERFISH, GRAY'
-region <- 'SOUTH ATLANTIC'
+spp <- 'GROUPER, RED'
+region <- 'GULF OF MEXICO'
 
 # Function to expand dates based on management status
 source(here("ODM-MH-Analysis_ready", "func_expand_status.R"))
@@ -49,22 +49,23 @@ unique(select(filter(mh_spp_closure, MANAGEMENT_TYPE_USE == "PROHIBITED SPECIES"
 spp_prohibited_spp <- expand_status(mh_spp_closure, "PROHIBITED SPECIES")
 
 # Combine all management types that refer to closures
+# For now just comment out mtypes that do not apply
 spp_closure_story <- spp_year %>%
   rename(FR_CITATION_year = "FR_CITATION",
          VALUE_year = "VALUE") %>%
   select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_year, VALUE_year) %>%
-  full_join(spp_season %>%
-              rename(FR_CITATION_season = "FR_CITATION",
-                     VALUE_season = "VALUE") %>%
-              select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_season, VALUE_season),
-            by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
+  # full_join(spp_season %>%
+  #             rename(FR_CITATION_season = "FR_CITATION",
+  #                    VALUE_season = "VALUE") %>%
+  #             select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_season, VALUE_season),
+  #           by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
   full_join(spp_closures %>%
               rename(FR_CITATION_close = "FR_CITATION",
                      VALUE_close = "VALUE") %>%
               select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_close, VALUE_close),
             by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
   # full_join(spp_prohibited_sale %>%
-  #             rename(FR_CITATION_sale = "FR_CITATION",
+  #            rename(FR_CITATION_sale = "FR_CITATION",
   #                    VALUE_sale = "VALUE") %>%
   #             select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_sale, VALUE_sale),
   #           by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
@@ -74,14 +75,19 @@ spp_closure_story <- spp_year %>%
   #             select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_spp, VALUE_spp),
   #           by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence)) %>%
   arrange(SECTOR_USE, SUBSECTOR_USE, ZONE_USE, date_sequence) %>%
-  mutate(FR_CITATION = pmax(FR_CITATION_year, FR_CITATION_season, FR_CITATION_close, 
-                            #FR_CITATION_sale, FR_CITATION_spp,
+  # Select the most recent FR CITATION
+  mutate(FR_CITATION = pmax(FR_CITATION_year, 
+                            #FR_CITATION_season, 
+                            FR_CITATION_close, 
+                            #FR_CITATION_sale, 
+                            #FR_CITATION_spp,
                             na.rm = T)) %>%
+  # Select the fishery status (open/closed) that applies to the most recent FR
   mutate(VALUE = case_when(FR_CITATION == FR_CITATION_close ~ VALUE_close,
                            #FR_CITATION == FR_CITATION_sale ~ VALUE_sale,
                            #FR_CITATION == FR_CITATION_spp ~ VALUE_spp,
-                           FR_CITATION == FR_CITATION_year ~ VALUE_year,
-                           FR_CITATION == FR_CITATION_season ~ VALUE_season))
+                           #FR_CITATION == FR_CITATION_season ~ VALUE_season,
+                           FR_CITATION == FR_CITATION_year ~ VALUE_year))
 
 summ_spp_closures <- spp_closure_story %>%
   mutate(YEAR = year(date_sequence)) %>%
@@ -93,7 +99,27 @@ summ_spp_closures <- spp_closure_story %>%
 
 # Save as Excel to compare to SEDAR MH file
 library(openxlsx)
-write.xlsx(summ_spp_closures, "C:/Users/sarina.atkinson/Documents/Data/MH_closures/SA_GTF_closures.xlsx")
+write.xlsx(summ_spp_closures, "C:/Users/sarina.atkinson/Documents/Data/MH_closures/GM_RGR_closures.xlsx")
+
+# Check GM RGR comm all closures
+chk <- filter(mh_data_log, SECTOR_USE == 'COMMERCIAL', ZONE_USE == 'ALL', FR_CITATION == '55 FR 46955')
+
+# Check GM RGR rec all closures - missing this FR which is in S88 MH file from Council
+chk <- filter(mh_data_log, FR_CITATION == '80 FR 59665')
+
+# Check SA speckled hind - some years 366 because of leap year
+chk <- filter(spp_closure_story, year(date_sequence) == 2016, SECTOR_USE == 'COMMERCIAL', ZONE_USE == 'ALL')
+
+# Check GM SM comm all closures
+chk <- filter(spp_prohibited_sale, SECTOR_USE == 'COMMERCIAL', ZONE_USE == 'ALL', year(date_sequence) == 2001)
+# Flag == yes because span mackerel can not be cut-off/damaged
+chk2 <- filter(mh_spp_closure, REGULATION_ID == 3018)
+# Look into flag==yes for prohibited sale and purchase
+chk_sale <- filter(mh_data_log, MANAGEMENT_TYPE_USE == "PROHIBITED SALE AND PURCHASE") %>%
+  group_by(REGION, COMMON_NAME_USE, FLAG) %>% summarise(nrecs = n())
+# SA wahoo - 1 record flagged NO, 3 flagged YES
+chk3 <- filter(mh_data_log, COMMON_NAME_USE == 'WAHOO', REGION == 'SOUTH ATLANTIC', MANAGEMENT_TYPE_USE == "PROHIBITED SALE AND PURCHASE") %>%
+  select(REGULATION_ID, FR_CITATION, FR_SECTION, FR_URL, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, FLAG)
 
 # Check SA GTF comm closures
 chk <- filter(spp_closures, SECTOR_USE == 'COMMERCIAL', ZONE_USE == 'ALL', year(date_sequence) == 2013)
@@ -114,4 +140,4 @@ chk3 <- filter(mh_spp_closure, SECTOR_USE == 'RECREATIONAL') %>% arrange(START_D
 
 # Check on SA RP COM closures
 chk <- filter(spp_closure_story, year(date_sequence) ==2000, ZONE_USE == 'ALL', SECTOR_USE == 'COMMERCIAL')
-chk2 <- filter(mh_spp_closure, FR_CITATION == '65 FR 51248')
+chk2 <- filter(mh_data_log, FR_CITATION == '65 FR 51248')
