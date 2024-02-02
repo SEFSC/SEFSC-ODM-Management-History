@@ -4,16 +4,16 @@
 librarian::shelf(here, tidyverse, lubridate, dplyr, tidyr, neatRanges, splitstackshape)
 
 # Read in MH Data log ####
-mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2023Nov13.RDS"))
-
-# Select species and region ####
-spp <- 'SNAPPER, YELLOWTAIL'
-region <- 'CARIBBEAN'
+# mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2023Nov13.RDS"))
+# 
+# # Select species and region ####
+# spp <- 'PORGY, RED'
+# region <- 'SOUTH ATLANTIC'
 
 # Seasonal Closures ####
 # Filter dataset to seasonal closure regulations for the specified species and region
-Seasonal_closures <- mh_data_log %>%
-  filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'SEASONAL', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0, COMMON_NAME_USE == spp, REGION == region)
+Seasonal_closures <- mh_spp_closure %>%
+  filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'SEASONAL', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0)
 
 # Create date_sequence to expand dates between EFFECTIVE_DATE and END_DATE2 
 expand_seasonal <- Seasonal_closures %>%
@@ -22,14 +22,14 @@ expand_seasonal <- Seasonal_closures %>%
 
 # Add START_YEAR_expand and END_YEAR_expand to extract the year from the date_sequence field
 expand_seasonal_year <- expand_seasonal %>%
-  rowwise() %>%
+  #rowwise() %>%
   mutate(START_YEAR_expand = year(date_sequence),
          END_YEAR_expand = year(date_sequence))
 
 # Create START_DATE_EXPAND and END_DATE_EXPAND using start/end day and month information and the expanded year
 expand_seasonal_date <- expand_seasonal_year %>%
-  mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH, START_DAY, sep = "-")),
-         END_DATE_EXPAND = as.Date(paste(END_YEAR_expand, END_MONTH, END_DAY, sep = "-")))
+  mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH, START_DAY_USE, sep = "-")),
+         END_DATE_EXPAND = as.Date(paste(END_YEAR_expand, END_MONTH_USE, END_DAY_USE, sep = "-")))
 
 # Remove records where date_sequence is prior to the START_DATE_EXPAND and date_sequence is after the END_DATE_EXPAND
 remove_seasonal_date <- expand_seasonal_date %>%
@@ -40,10 +40,58 @@ remove_seasonal_date <- expand_seasonal_date %>%
 add_closure_value_seasonal <- remove_seasonal_date %>%
   mutate(CLOSE_OPEN = VALUE)
 
+# Monthly Closures ####
+monthly_closures <-  mh_spp_closure %>%
+  filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'MONTHLY RECURRING', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0)
+
+# Expand dates between EFFECTIVE_DATE and END_DATE2
+expand_monthly <- monthly_closures %>%
+  mutate(date_sequence = map2(EFFECTIVE_DATE, END_DATE2, seq, by = "days")) %>%
+  unnest(date_sequence)
+
+# Add START_YEAR_expand and END_YEAR_expand to extract the year from the date_sequence field
+# Add START_MONTH_expand and END_MONTH_expand to extract the month from the date_sequence field
+# Takes 20 mins to run!!!!
+start <- Sys.time()
+expand_monthly_year <- expand_monthly %>%
+  #rowwise() %>%
+  mutate(START_YEAR_expand = year(date_sequence),
+         END_YEAR_expand = year(date_sequence),
+         # case where the monthly recurring goes from the 15th to the 1st of the following month
+         START_MONTH_expand = case_when(END_DAY_USE < START_DAY_USE & day(date_sequence) < START_DAY_USE & month(date_sequence) != 1 ~ month(date_sequence) - 1,
+                                        END_DAY_USE < START_DAY_USE & day(date_sequence) < START_DAY_USE & month(date_sequence) == 1 ~ 12,
+                                        TRUE ~ month(date_sequence)),
+         END_MONTH_expand = case_when(END_DAY_USE < START_DAY_USE & day(date_sequence) < START_DAY_USE & month(date_sequence) != 1 ~ month(date_sequence),
+                                      END_DAY_USE < START_DAY_USE & day(date_sequence) >= START_DAY_USE & month(date_sequence) + 1 <= 12 ~ month(date_sequence) + 1,
+                                      END_DAY_USE < START_DAY_USE & day(date_sequence) >= START_DAY_USE & month(date_sequence) + 1 == 13 ~ 1,
+                                      TRUE ~ month(date_sequence))) %>%
+  # only include months within the start/end month range
+  # when monthly recurring, the start/end month range refers to the first and last month where the recurring closure applies
+  # i.e. start month = 2 and end month = 11
+      # mean recurring closures start in Feb and end in Nov
+      # can't use END_MONTH_expand in filter for cases when the recurring closures spans 2 months (i.e. 15th -1st)
+  filter(START_MONTH_expand >= START_MONTH &
+         START_MONTH_expand <= END_MONTH)
+Sys.time()-start
+
+# Create Expand_days to indicate the day of the week for the closure/reopening
+expand_monthly_date <- expand_monthly_year %>%
+  mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH_expand, START_DAY_USE, sep = "-")),
+         END_DATE_EXPAND = as.Date(paste(END_YEAR_expand, END_MONTH_expand, END_DAY_USE, sep = "-")))
+
+# Remove records where date_sequence is prior to the START_DATE_EXPAND and date_sequence is after the END_DATE_EXPAND
+remove_monthly_date <- expand_monthly_date %>%
+  filter(date_sequence >= START_DATE_EXPAND,
+         date_sequence <= END_DATE_EXPAND)
+
+# Create CLOSE_OPEN field to indicate that expanded records are related to Closures or Openings
+add_closure_value_monthly <- remove_monthly_date %>%
+  mutate(CLOSE_OPEN = VALUE)
+
 # Weekly Closures ####
 # Filter dataset to Weekly Recurring regulations
-Weekly_closures <- mh_data_log %>%
-  filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'WEEKLY RECURRING', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0, COMMON_NAME_USE == spp, REGION == region)
+Weekly_closures <-  mh_spp_closure %>%
+  filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'WEEKLY RECURRING', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0)
 
 # Expand dates between EFFECTIVE_DATE and END_DATE2
 expand_weekly <- Weekly_closures %>%
@@ -52,7 +100,7 @@ expand_weekly <- Weekly_closures %>%
 
 # Add START_YEAR_expand and END_YEAR_expand to extract the year from the date_sequence field
 expand_weekly_year <- expand_weekly %>%
-  rowwise() %>%
+  #rowwise() %>%
   mutate(START_YEAR_expand = year(date_sequence),
          END_YEAR_expand = year(date_sequence))
 
@@ -92,8 +140,8 @@ add_closure_value_weekly <- expand_weekly_day_keep %>%
 
 # One Time Closures ####
 # Filter dataset to One Time regulations
-One_closures <- mh_data_log %>%
-  filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'ONCE', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0, COMMON_NAME_USE == spp, REGION == region)
+One_closures <- mh_spp_closure %>%
+  filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'ONCE', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0)
 
 # Expand dates between EFFECTIVE_DATE and END_DATE2
 expand_one <- One_closures %>%
@@ -105,6 +153,78 @@ expand_one <- One_closures %>%
 add_closure_value_one <- expand_one %>%
   mutate(CLOSE_OPEN = VALUE)
 
+# Join in Wide Form
+# First clean up duplicates
+# Then limit variables and rename
+# Then create final OPEN/CLOSED field based on all closure events
+# Takes an 1.5 hours to run if use rowwise!!!
+# Instead remove rowwise and pmax for faster runtime
+Sys.time()
+closure_all <- add_closure_value_one %>%
+  select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, 
+         CLUSTER, REGULATION_ID, FR_CITATION, CLOSE_OPEN) %>%
+  arrange(date_sequence, desc(FR_CITATION)) %>%
+  group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
+  # Retain only most recent FR if there are 2 records with the same date_sequence
+  slice(1) %>%
+  rename(CLUSTER_one = "CLUSTER",
+         REGULATION_ID_one = "REGULATION_ID",
+         FR_CITATION_one = "FR_CITATION",
+         CLOSE_OPEN_one = "CLOSE_OPEN") %>%
+  full_join(add_closure_value_weekly %>%
+              select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence,  
+                     CLUSTER, REGULATION_ID, FR_CITATION, CLOSE_OPEN) %>%
+              arrange(date_sequence, desc(FR_CITATION)) %>%
+              group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
+              # Retain only most recent FR if there are 2 records with the same date_sequence
+              slice(1) %>%
+              rename(CLUSTER_weekly = "CLUSTER",
+                     REGULATION_ID_weekly = "REGULATION_ID",
+                     FR_CITATION_weekly = "FR_CITATION",
+                     CLOSE_OPEN_weekly = "CLOSE_OPEN"),
+            by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence)) %>%
+  full_join(add_closure_value_seasonal %>%
+              select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence,  
+                     CLUSTER, REGULATION_ID, FR_CITATION, CLOSE_OPEN) %>%
+              arrange(date_sequence, desc(FR_CITATION)) %>%
+              group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
+              # Retain only most recent FR if there are 2 records with the same date_sequence
+              slice(1) %>%
+              rename(CLUSTER_seasonal = "CLUSTER",
+                     REGULATION_ID_seasonal = "REGULATION_ID",
+                     FR_CITATION_seasonal = "FR_CITATION",
+                     CLOSE_OPEN_seasonal = "CLOSE_OPEN"),
+            by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence)) %>%
+  full_join(add_closure_value_monthly %>%
+              select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence,  
+                     CLUSTER, REGULATION_ID, FR_CITATION, CLOSE_OPEN) %>%
+              arrange(date_sequence, desc(FR_CITATION)) %>%
+              group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
+              # Retain only most recent FR if there are 2 records with the same date_sequence
+              slice(1) %>%
+              rename(CLUSTER_monthly = "CLUSTER",
+                     REGULATION_ID_monthly = "REGULATION_ID",
+                     FR_CITATION_monthly = "FR_CITATION",
+                     CLOSE_OPEN_monthly = "CLOSE_OPEN"),
+            by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE,  date_sequence)) %>%
+  # create final OPEN_CLOSE field 
+  ungroup() %>% 
+  #rowwise() %>%
+  mutate(final_FR = pmax(FR_CITATION_one, FR_CITATION_seasonal, FR_CITATION_weekly, FR_CITATION_monthly, na.rm = T)) %>%
+  mutate(final_CLOSE_OPEN = case_when(final_FR == FR_CITATION_one ~ CLOSE_OPEN_one,
+                                      final_FR == FR_CITATION_weekly ~ CLOSE_OPEN_weekly,
+                                      final_FR == FR_CITATION_seasonal ~ CLOSE_OPEN_seasonal,
+                                      final_FR == FR_CITATION_monthly ~ CLOSE_OPEN_monthly))
+Sys.time()
+
+# Chck
+chk <- closure_all %>% 
+  mutate(YEAR = (year(date_sequence))) %>%
+  group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, YEAR, final_FR, final_CLOSE_OPEN) %>% 
+  summarize(ndays = n())
+
+#########################################################
+# Join in Long Form
 # Join Closure Types Together ####
 # Combine closure data frames
 Combined_closures <- bind_rows(add_closure_value_seasonal, add_closure_value_weekly, add_closure_value_one)

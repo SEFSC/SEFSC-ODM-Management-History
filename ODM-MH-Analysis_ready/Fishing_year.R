@@ -6,7 +6,7 @@
 librarian::shelf(here, tidyverse)
 
 # Read in MH Data Log
-mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2023Sep14.RDS"))
+mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Jan19.RDS"))
 
 # Recode regulations entered as FISHING SEASON to FISHING YEAR
 # Filter for only fishing season management type

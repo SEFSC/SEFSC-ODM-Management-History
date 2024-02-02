@@ -173,7 +173,9 @@ mh_newvar <- mh_setup %>%
          END_DATE = case_when(MANAGEMENT_STATUS_USE == "ONCE" &
                                 !is.na(END_DAY) &
                                 !is.na(END_MONTH) &
-                                !is.na(END_YEAR) ~ as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y"),
+                                !is.na(END_YEAR) &
+                                # Added condition on 2/2/24 because of REG_ID 762
+                                as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y") < INEFFECTIVE_DATE ~ as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y"),
                               TRUE ~ INEFFECTIVE_DATE),
          # For records with an END_TIME of "12:01:00 AM", the END_DATE should be reverted to one day prior.
          # This will infer that the regulation remained in place through the end of that day and not one minute into the next day.
