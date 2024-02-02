@@ -8,8 +8,8 @@ librarian::shelf(here, tidyverse, lubridate, dplyr, tidyr, neatRanges, splitstac
 mh_data_log <- readRDS(here("ODM-MH-Analysis_ready", "results", "MH_DL_wFY_2024Jan19.RDS"))
 
 # Select species and region
-spp <- 'GROUPER, RED'
-region <- 'GULF OF MEXICO'
+spp <- 'PORGY, RED'
+region <- 'SOUTH ATLANTIC'
 
 # Function to expand dates based on management status
 source(here("ODM-MH-Analysis_ready", "func_expand_status.R"))
@@ -22,7 +22,9 @@ mh_spp_closure <- mh_data_log %>%
                                     'PROHIBITED SALE AND PURCHASE',
                                     'PROHIBITED SPECIES')) %>%
   mutate(VALUE = case_when(MANAGEMENT_TYPE_USE %in% c('FISHING SEASON', 'FISHING YEAR') ~ 'OPEN',
-                           MANAGEMENT_TYPE_USE %in% c('PROHIBITED SALE AND PURCHASE', 'PROHIBITED SPECIES') ~ 'CLOSE',
+                           MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE' & FLAG == 'YES' ~ 'OPEN'
+                           MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE' & FLAG == 'NO' ~ 'CLOSE',
+                           MANAGEMENT_TYPE_USE == 'PROHIBITED SPECIES' ~ 'CLOSE',
                            TRUE ~ VALUE)) %>%
   arrange(SECTOR_USE, START_DATE2)
 
@@ -54,39 +56,39 @@ spp_closure_story <- spp_year %>%
   rename(FR_CITATION_year = "FR_CITATION",
          VALUE_year = "VALUE") %>%
   select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_year, VALUE_year) %>%
-  # full_join(spp_season %>%
-  #             rename(FR_CITATION_season = "FR_CITATION",
-  #                    VALUE_season = "VALUE") %>%
-  #             select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_season, VALUE_season),
-  #           by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
+  full_join(spp_season %>%
+              rename(FR_CITATION_season = "FR_CITATION",
+                     VALUE_season = "VALUE") %>%
+              select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_season, VALUE_season),
+            by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
   full_join(spp_closures %>%
               rename(FR_CITATION_close = "FR_CITATION",
                      VALUE_close = "VALUE") %>%
               select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_close, VALUE_close),
             by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
-  # full_join(spp_prohibited_sale %>%
-  #            rename(FR_CITATION_sale = "FR_CITATION",
-  #                    VALUE_sale = "VALUE") %>%
-  #             select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_sale, VALUE_sale),
-  #           by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
-  # full_join(spp_prohibited_spp %>%
-  #             rename(FR_CITATION_spp = "FR_CITATION",
-  #                    VALUE_spp = "VALUE") %>%
-  #             select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_spp, VALUE_spp),
-  #           by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence)) %>%
+  full_join(spp_prohibited_sale %>%
+             rename(FR_CITATION_sale = "FR_CITATION",
+                     VALUE_sale = "VALUE") %>%
+              select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_sale, VALUE_sale),
+            by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
+  full_join(spp_prohibited_spp %>%
+              rename(FR_CITATION_spp = "FR_CITATION",
+                     VALUE_spp = "VALUE") %>%
+              select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_spp, VALUE_spp),
+            by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence)) %>%
   arrange(SECTOR_USE, SUBSECTOR_USE, ZONE_USE, date_sequence) %>%
   # Select the most recent FR CITATION
   mutate(FR_CITATION = pmax(FR_CITATION_year, 
-                            #FR_CITATION_season, 
+                            FR_CITATION_season, 
                             FR_CITATION_close, 
-                            #FR_CITATION_sale, 
-                            #FR_CITATION_spp,
+                            FR_CITATION_sale, 
+                            FR_CITATION_spp,
                             na.rm = T)) %>%
   # Select the fishery status (open/closed) that applies to the most recent FR
   mutate(VALUE = case_when(FR_CITATION == FR_CITATION_close ~ VALUE_close,
-                           #FR_CITATION == FR_CITATION_sale ~ VALUE_sale,
-                           #FR_CITATION == FR_CITATION_spp ~ VALUE_spp,
-                           #FR_CITATION == FR_CITATION_season ~ VALUE_season,
+                           FR_CITATION == FR_CITATION_sale ~ VALUE_sale,
+                           FR_CITATION == FR_CITATION_spp ~ VALUE_spp,
+                           FR_CITATION == FR_CITATION_season ~ VALUE_season,
                            FR_CITATION == FR_CITATION_year ~ VALUE_year))
 
 summ_spp_closures <- spp_closure_story %>%
