@@ -174,13 +174,23 @@ mh_dates <- mh_reversions %>%
                                        MULTI_REG_VALUE == 1 ~ 0,
                                        MULTI_REG_SEASONAL == 1 ~ 0,
                                        diff_days <= -1 ~ 1,
+                                       # Added 2/2/24 - if multi reg forcast & only include start year, do not want to flag
+                                       MULTI_REG_FORECAST == 1 & is.na(START_DAY_USE) & is.na(START_MONTH) & !is.na(START_YEAR) ~ 0,
                                        MULTI_REG_FORECAST == 1 & START_DATE_USE == max(START_DATE_USE[FR_CITATION > FR_CITATION]) ~ 1,
                                        TRUE ~ 0),
          # ADJUST THE START DATE AND START TIME FOR CLUSTER 306 WHEN THE REOPENING ENDS IN THE MIDDLE OF THE DAY
          START_TIME_USE = case_when(lead(!is.na(END_TIME_USE) & STATUS_TYPE == 'SIMPLE' & VALUE == 'OPEN') & START_DATE_USE == lead(END_DATE) + 1 ~ format(as.POSIXct(lead(END_TIME_USE), format = '%I:%M:%S %p') %m+% minutes(1), "%I:%M:%S %p"),
                                     TRUE ~ START_TIME_USE),
          START_DATE_USE = case_when(lead(!is.na(END_TIME_USE) & STATUS_TYPE == 'SIMPLE' & VALUE == 'OPEN') & START_DATE_USE == lead(END_DATE) + 1 ~ lead(END_DATE),
-                                    TRUE ~ START_DATE_USE))
+                                    TRUE ~ START_DATE_USE)) %>%
+    # Added 2/2/24 - fix on end date
+    group_by(CLUSTER, FR_CITATION) %>%
+    mutate(END_DATE_adjust = case_when(MULTI_REG_CLUSTER == 1 ~ max(END_DATE)),
+           END_DATE = case_when(MANAGEMENT_TYPE_USE == "DEFINITION" ~ end_timeseries,
+                                is.na(INEFFECTIVE_DATE) & !is.na(END_DATE_adjust) ~ END_DATE_adjust,
+                                TRUE ~ END_DATE)) %>%
+    # Added 2/2/24 - do not include records that were added because of an adjustment, but not actually implemented
+    filter(!(NEVER_IMPLEMENTED == 1 & REVERSION == TRUE))
   
   # CHECK: Make sure no reversions are also regulation removals
   dim(filter(mh_dates, REG_REMOVED == 1, REVERSION == TRUE))
