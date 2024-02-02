@@ -8,12 +8,27 @@ mh_fs <- mh_data_log %>%
 
 # Identify cases that have a split fishing season - yes, we have split fishing season 
 mh_fs_chk1 <- mh_fs %>% ungroup() %>%
-  group_by(FR_CITATION, FMP, REGION, COMMON_NAME_USE, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, EFFECTIVE_DATE) %>%
+  group_by(FR_CITATION, FMP, REGION, COMMON_NAME_USE, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, MANAGEMENT_STATUS_USE, EFFECTIVE_DATE) %>%
   summarise(N_seasons = n()) 
 # Join to data
 mh_fs2 <- mh_fs %>% 
   left_join(mh_fs_chk1, by = c("FR_CITATION", "REGION", "FMP", "EFFECTIVE_DATE", "SECTOR_USE", 
-                               "COMMON_NAME_USE", "ZONE_USE", "SUBSECTOR_USE"))
+                               "COMMON_NAME_USE", "ZONE_USE", "SUBSECTOR_USE", "MANAGEMENT_STATUS_USE"))
+# Check date fields
+chk_dates <- mh_fs2 %>%
+  select(REGULATION_ID, FR_CITATION, FMP, REGION, COMMON_NAME_USE, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, MANAGEMENT_STATUS_USE, EFFECTIVE_DATE,
+         INEFFECTIVE_DATE, START_MONTH, START_DAY_USE, START_YEAR, START_DAY_OF_WEEK_USE, 
+         END_MONTH_USE, END_DAY_USE, END_YEAR_USE, END_DAY_OF_WEEK_USE, 
+         START_DATE2, END_DATE2)
+
+# Check other weekly recurring events
+chk_weekly <- mh_data_log %>% filter(MANAGEMENT_STATUS_USE == 'WEEKLY RECURRING')
+# Check REG ID 11548
+chk <- mh_data_log %>% filter(REGULATION_ID == 11548) %>% 
+  select(REGULATION_ID, FR_CITATION, FMP, REGION, COMMON_NAME_USE, SECTOR_USE, SUBSECTOR_USE, ZONE_USE, MANAGEMENT_STATUS_USE, EFFECTIVE_DATE,
+         INEFFECTIVE_DATE, START_MONTH, START_DAY_USE, START_YEAR, START_DAY_OF_WEEK_USE, 
+         END_MONTH_USE, END_DAY_USE, END_YEAR_USE, END_DAY_OF_WEEK_USE, 
+         START_DATE2, END_DATE2, EFFECTIVE_DATE_FY_1, FY_1, EFFECTIVE_DATE_FY_2, FY_2, EFFECTIVE_DATE_FY_3, FY_3)
 
 # Check spiny lobster - had no fishing year because has fishing season?
 # Include fishing season in "CLOSURE" story and process there
@@ -52,10 +67,13 @@ mh_fs_ck2 <- mh_fs2 %>%
                           END_MONTH_USE < START_MONTH ~ START_FS - END_FS)) %>%
   filter(N_seasons == 1)
 
+# Check fishing season for specific areas
+chk <- mh_fs_ck2 %>% group_by(SECTOR_USE, SUBSECTOR_USE, ZONE_USE) %>% summarize(n = n())
+
 # Recode fishing season records as fishing year if 365 days
 fs_to_fy <- mh_fs_ck2 %>% ungroup() %>%
-  filter(abs(DIFF) %in% c(364, 365, 1)) %>%
-  select(REGULATION_ID) %>% pull()
+  filter(abs(DIFF) %in% c(364, 365, 1)) #%>%
+  #select(REGULATION_ID) %>% pull()
 
 # Check for cases where there is a single fishing season and its less than 365 days
 # These are cases where the inverse is then considered a closure
