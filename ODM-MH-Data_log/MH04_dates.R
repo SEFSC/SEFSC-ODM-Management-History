@@ -177,6 +177,8 @@ mh_dates <- mh_reversions %>%
                                        # Added 2/2/24 - if multi reg forcast & only include start year, do not want to flag
                                        MULTI_REG_FORECAST == 1 & is.na(START_DAY_USE) & is.na(START_MONTH) & !is.na(START_YEAR) ~ 0,
                                        MULTI_REG_FORECAST == 1 & START_DATE_USE == max(START_DATE_USE[FR_CITATION > FR_CITATION]) ~ 1,
+                                       # Added 2/5/24 to hard code the two cases of WITHDRAWN/DELAYED regulations
+                                       REGULATION_ID %in% c(1355, 1589, 1356, 1463, 1341) ~ 1,
                                        TRUE ~ 0),
          # ADJUST THE START DATE AND START TIME FOR CLUSTER 306 WHEN THE REOPENING ENDS IN THE MIDDLE OF THE DAY
          START_TIME_USE = case_when(lead(!is.na(END_TIME_USE) & STATUS_TYPE == 'SIMPLE' & VALUE == 'OPEN') & START_DATE_USE == lead(END_DATE) + 1 ~ format(as.POSIXct(lead(END_TIME_USE), format = '%I:%M:%S %p') %m+% minutes(1), "%I:%M:%S %p"),
