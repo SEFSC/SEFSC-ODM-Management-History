@@ -3,7 +3,7 @@
 librarian::shelf(here, tidyverse, lubridate, dplyr, tidyr, neatRanges, splitstackshape, reprex)
 
 # Read in MH Data log ####
-mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Feb08.RDS"))
+mh_data_log <- mh_data_log
 
 # Read in zone_specific_xref
 zone_class_xref <- read.csv(here('ODM-MH-Data_log', 'data/raw', "zone_specific_xref.csv"))
@@ -202,6 +202,7 @@ zone_remove_flags <- zone_reversion_remove %>%
             zone_specific_specific2, zone_specific_specific3, zone_specific_specific4, zone_specific_specific_change, zone_specific_specific_multi, species_all, reversion_remove, ZONE_LINK, zone_link2))
 
 # Join Zone forks with zone_interest
-zone_join <- zone_interest %>%
+mh_zone_join <- zone_interest %>%
   left_join(zone_remove_flags) %>%
   select(-c(zone_general_use, zone_specific_use))
+
