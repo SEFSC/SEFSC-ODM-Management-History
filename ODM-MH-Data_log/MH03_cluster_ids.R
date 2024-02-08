@@ -73,7 +73,7 @@ unique_clusters <- rbind(existing_clusters, new_clusters)
 # CLUSTER that are effective at the same time but have different VALUE_TYPEs or VALUE_RATEs (example: CLUSTER 2046)
 multi_reg_value <- mh_prep %>%
   group_by(CLUSTER, FR_CITATION, ZONE_USE) %>%
-  mutate(MULTI_REG_VALUE = as.numeric(n() > 1 & (n_distinct(VALUE_TYPE) > 1 | n_distinct(VALUE_RATE) > 1))) %>%
+  mutate(MULTI_REG_VALUE = as.numeric(n() > 1 & (n_distinct(VALUE) | n_distinct(VALUE_TYPE) > 1 | n_distinct(VALUE_RATE) > 1))) %>%
   ungroup()
   
 # Create variable to indicate when there are multiple records per cluster per FR_CITATION active at the same time but
