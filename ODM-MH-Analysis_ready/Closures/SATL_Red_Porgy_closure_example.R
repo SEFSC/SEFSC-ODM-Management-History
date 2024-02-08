@@ -5,7 +5,7 @@
 librarian::shelf(here, tidyverse, lubridate, openxlsx, neatRanges, splitstackshape)
 
 # Read in MH Data Log
-mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Feb07.RDS"))
+mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Feb08.RDS"))
 
 # Select species and region
 spp <- 'PORGY, RED'
