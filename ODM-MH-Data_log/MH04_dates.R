@@ -24,7 +24,9 @@ mh_dates_prep <- mh_cluster_ids %>%
   # The LINK variable will only be present for regulations that are an ADJUSTMENT
   # The LINK variable indicates the REGULATION_ID of the non-ADJUSTMENT records that occurred before an ADJUSTMENT record
   # The record associated with that REGULATION_ID will go back into effect once the ADJUSTMENT period has ended
-  mutate(LINK = case_when(ADJUSTMENT == 1 & FIRST_REG == 1 ~ 0,
+  # 2/8/24 Update: To remove some confusion related to CATCH LIMITS we are removing reversion records for this MANAGEMENT CATEGORY
+   mutate(LINK = case_when(MANAGEMENT_CATEGORY == "CATCH LIMITS" ~ 0,
+                          ADJUSTMENT == 1 & FIRST_REG == 1 ~ 0,
                           ADJUSTMENT == 1 & lead(REG_REMOVED, 1) == 1 ~ 0,
                           ADJUSTMENT == 1 & lead(ADJUSTMENT, 1) != 1 ~ lead(REGULATION_ID, 1),
                           ADJUSTMENT == 1 & lead(ADJUSTMENT, 2) != 1 ~ lead(REGULATION_ID, 2),
@@ -155,7 +157,8 @@ mh_dates <- mh_reversions %>%
                                  TRUE ~ CHANGE_DATE),
          # When an END_DATE is provided it should be used to signify the END_DATE
          # Otherwise, the CHANGE_DATE should be used for the END_DATE information
-         END_DATE = case_when(!is.na(END_DATE) ~ END_DATE,
+         END_DATE = case_when(EFFECTIVE_DATE == INEFFECTIVE_DATE ~ START_DATE,
+                              !is.na(END_DATE) ~ END_DATE,
                               # is.na(END_YEAR) & !is.na(INEFFECTIVE_DATE) ~ INEFFECTIVE_DATE,
                               TRUE ~ CHANGE_DATE),
          # If the CHANGE_DATE is after the END_DATE and there is an END_DATE provided, then the END_DATE should be used
@@ -170,7 +173,10 @@ mh_dates <- mh_reversions %>%
          # When the diff_days variable is less than or equal to -1, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
          # When the START_DATE_USE is after the END_DATE, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
          # When MULTI_REG_FORECAST is flagged (1) and the START_DATE_USE is equal to the START_DATE_USE of a later FR_CITATION, then NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
-         NEVER_IMPLEMENTED = case_when(START_DATE_USE > END_DATE ~ 1,
+         NEVER_IMPLEMENTED = case_when(
+           # Added 2/8/24 to remove confusion related to Catch Limit management types
+                                      MANAGEMENT_CATEGORY == "CATCH LIMITS" ~ 0,
+                                      START_DATE_USE > END_DATE ~ 1,
                                        MULTI_REG_VALUE == 1 ~ 0,
                                        MULTI_REG_SEASONAL == 1 ~ 0,
                                        diff_days <= -1 ~ 1,
