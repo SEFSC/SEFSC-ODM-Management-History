@@ -2,10 +2,10 @@
 
 # Load packages ####
 #install.packages("librarian")
-librarian::shelf(here, tidyverse, lubridate, dplyr, tidyr, neatRanges, splitstackshape)
+librarian::shelf(here, tidyverse, lubridate, openxlsx, neatRanges, splitstackshape)
 
 # Read in MH Data Log
-mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Feb06.RDS"))
+mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Feb07.RDS"))
 
 # Select species and region
 spp <- 'PORGY, RED'
@@ -17,16 +17,12 @@ source(here("ODM-MH-Analysis_ready", "func_expand_status.R"))
 # filter for species and region (all closure related records)
 # Recode management types to have a value
 mh_spp_closure <- mh_data_log %>%
-  filter(COMMON_NAME_USE == spp, REGION == region,
-         MANAGEMENT_TYPE_USE %in% c('CLOSURE', 'FISHING SEASON', 'FISHING YEAR',
-                                    'PROHIBITED SALE AND PURCHASE',
-                                    'PROHIBITED SPECIES')) %>%
+  filter(COMMON_NAME_USE == spp & REGION == region &
+         (MANAGEMENT_TYPE_USE %in% c('CLOSURE', 'FISHING SEASON', 'FISHING YEAR', 'PROHIBITED SPECIES') |
+            # Flag == NO means fishery wide prohibited sale and purchase (ie closure)
+            MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE' & FLAG == 'NO')) %>%
   mutate(VALUE = case_when(MANAGEMENT_TYPE_USE %in% c('FISHING SEASON', 'FISHING YEAR') ~ 'OPEN',
-                           # If flag == YES, then that means the prohibited sale and purchase record is a minimal change (i.e. prohibited sale if fish not landed intact)
-                           MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE' & FLAG == 'YES' ~ 'OPEN',
-                           # If flag == NO, then fishery wide prohibited sale and purchase
-                           MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE' & FLAG == 'NO' ~ 'CLOSE',
-                           MANAGEMENT_TYPE_USE == 'PROHIBITED SPECIES' ~ 'CLOSE',
+                           MANAGEMENT_TYPE_USE %in% c('PROHIBITED SALE AND PURCHASE', 'PROHIBITED SPECIES') ~ 'CLOSE',
                            TRUE ~ VALUE)) %>%
   arrange(SECTOR_USE, START_DATE2)
 
@@ -99,21 +95,10 @@ summ_spp_closures <- spp_closure_story %>%
             start = min(date_sequence),
             end = max(date_sequence)) %>%
   arrange(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, YEAR, start) %>%
-  # Summarize only number of days closed 
-  filter(VALUE == 'CLOSE')
+  # Add back FR_URL for reference
+  left_join(distinct(select(filter(ungroup(mh_data_log), FMP == 'SNAPPER-GROUPER FISHERY OF THE SOUTH ATLANTIC REGION'), FR_CITATION, FR_URL)),
+            by = join_by(FR_CITATION))
 
 # Save as Excel to compare to SEDAR MH file
-library(openxlsx)
-write.xlsx(summ_spp_closures, "C:/Users/sarina.atkinson/Documents/Data/MH_closures/SA_RP_closures.xlsx")
-
-
-# Check SA RS REC closures
-chk <- filter(spp_closure_story, SECTOR_USE == 'RECREATIONAL', ZONE_USE == 'ALL', year(date_sequence) == 2021)
-chk2 <- filter(mh_data_log, FR_CITATION == '74 FR 58902', MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE')
-chk3 <- filter(mh_spp_closure, SECTOR_USE == 'RECREATIONAL') %>% arrange(START_DATE2) %>%
-  select(CLUSTER, REGULATION_ID, FR_CITATION, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, VALUE,
-         EFFECTIVE_DATE, INEFFECTIVE_DATE, START_DATE2, END_DATE2, 
-         START_MONTH, START_DAY_USE, START_YEAR, END_MONTH_USE, END_DAY_USE, END_YEAR_USE, 
-         REVERSION, NEVER_IMPLEMENTED) %>%
-  filter(!(NEVER_IMPLEMENTED == 1 & REVERSION == TRUE))
+write.xlsx(summ_spp_closures, "C:/Users/sarina.atkinson/Documents/Data/MH_closures/SA_RP_closures_08Feb24.xlsx")
 
