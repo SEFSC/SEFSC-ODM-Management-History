@@ -57,8 +57,12 @@ source(here('ODM-MH-Data_log', 'MH04_dates.R'))
   # Data frame result: mh_analysis_ready (includes only variables of interest and simple clusters (no multi-reg for now))
 source(here('ODM-MH-Data_log', 'MH05_spp_expansion.R'))
 
+# 6: Zone forks
+  # Data frame result: mh_zone_join
+source(here('ODM-MH-Data_log', 'MH06_zone_forks.R'))
+
 # Idea to add a script here that will link clusters that are dependent on each other to complete the story 
 # Closure, fishing year, and fishing season
 
 # Save environment as .RDS file for testing against a static result
-saveRDS(mh_data_log, here("ODM-MH-Data_log", "data", "results", paste0('MH_DL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
+saveRDS(mh_zone_join, here("ODM-MH-Data_log", "data", "results", paste0('MH_DL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
