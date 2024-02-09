@@ -264,6 +264,9 @@ zone_interest_filter <- zone_interest %>%
    "1101")))
 
 mh_data_log_final <- bind_rows(zone_interest_filter, zone_remove_flags_filter, trip)%>%
-  arrange(CLUSTER)
+  arrange(CLUSTER)%>%
+  select(-zone_specific_use, -zone_general_use)
   
+saveRDS(mh_data_log_final, here("ODM-MH-Data_log", "data", "results", paste0('MH_DL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
+
 
