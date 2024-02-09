@@ -202,7 +202,68 @@ zone_remove_flags <- zone_reversion_remove %>%
             zone_specific_specific2, zone_specific_specific3, zone_specific_specific4, zone_specific_specific_change, zone_specific_specific_multi, species_all, reversion_remove, ZONE_LINK, zone_link2))
 
 # Join Zone forks with zone_interest
-mh_zone_join <- zone_interest %>%
-  left_join(zone_remove_flags) %>%
-  select(-c(zone_general_use, zone_specific_use))
+zone_interest_filter <- zone_interest %>%
+  filter(!(CLUSTER %in% c("342","343","1","2",
+     "360",
+     "296",
+     "297",
+      "80",
+     "118",
+     "119",
+      "30",
+    "1043",
+      "39",
+      "33",
+    "1042",
+    "1607",
+    "1611",
+    "2003",
+    "1173",
+    "1174",
+    "1617",
+    "1618",
+      "10",
+      "11",
+      "50",
+      "49",
+      "54",
+      "79",
+      "53",
+     "282",
+     "283",
+    "1132",
+     "511",
+    "1484",
+    "1485",
+    "1905",
+     "241",
+     "952",
+    "1202",
+    "1048",
+      "99",
+     "100",
+     "101",
+     "102",
+     "382",
+     "383",
+     "393",
+     "843",
+     "844",
+     "711",
+     "718",
+     "723",
+     "725",
+     "727",
+     "729",
+   "2026",
+     "226",
+   "108",
+   "275",
+   "276",
+   "281",
+   "1101")))
+
+mh_data_log_final <- bind_rows(zone_interest_filter, zone_remove_flags_filter, trip)%>%
+  arrange(CLUSTER)
+  
 
