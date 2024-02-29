@@ -263,10 +263,127 @@ zone_interest_filter <- zone_interest %>%
    "281",
    "1101")))
 
-mh_data_log_final <- bind_rows(zone_interest_filter, zone_remove_flags_filter, trip)%>%
+# Hard coding trip limits
+mh_zone_triplimits <- zone_interest %>%
+  filter(interest_cluster == 1) %>%
+  filter(MANAGEMENT_TYPE_USE == "TRIP LIMIT")
+
+triplimits_108 <- mh_zone_triplimits %>%
+  filter(CLUSTER == "108") %>%
+  mutate(END_DATE2 = case_when(REGULATION_ID == "3166" ~ as.Date("1997-06-01"),
+                               REGULATION_ID == "2620" ~ as.Date("2000-08-01"),
+                               REGULATION_ID == "11905" ~ as.Date("2008-03-11"),
+                               REGULATION_ID == "1486" ~ as.Date("2015-08-13"),
+                               REGULATION_ID == "3170" ~ as.Date("1997-06-01"),
+                               REGULATION_ID == "3169" ~ as.Date("1997-06-01"),
+                               REGULATION_ID == "3167" ~ as.Date("1997-06-01"),
+                               REGULATION_ID == "3168" ~ as.Date("1997-06-01"),
+                               REGULATION_ID == "2616" ~ as.Date("2000-08-01"),
+                               REGULATION_ID == "2617" ~ as.Date("2000-08-01"),
+                               REGULATION_ID == "2619" ~ as.Date("2000-08-01"),
+                               REGULATION_ID == "2618" ~ as.Date("2000-08-01"),
+                               TRUE ~ END_DATE2)) %>%
+  mutate(MANAGEMENT_STATUS = case_when(REGULATION_ID == "3040" & REVERSION == "FALSE" ~ "SEASONAL",
+                                       TRUE ~ MANAGEMENT_STATUS)) %>%
+  mutate(MANAGEMENT_STATUS_USE = case_when(REGULATION_ID == "3040" & REVERSION == "FALSE" ~ "SEASONAL",
+                                           TRUE ~ MANAGEMENT_STATUS_USE)) %>%
+  mutate(STATUS_TYPE = case_when(REGULATION_ID == "3040" & REVERSION == "FALSE" ~ "RECURRING",
+                                 TRUE ~ STATUS_TYPE)) %>%
+  mutate(remove = case_when(REGULATION_ID == "3040" & REVERSION == "TRUE" ~ 1,
+                            TRUE ~ 0)) %>%
+  filter((remove == 0)) %>%
+  select(-remove)
+
+triplimits_275 <- mh_zone_triplimits %>%
+  filter(CLUSTER == "275") %>%
+  mutate(END_DATE2 = case_when(REGULATION_ID == "1172" ~ as.Date("1996-09-22"),
+                               REGULATION_ID == "5058" ~ as.Date("1997-06-01"),
+                               REGULATION_ID == "1175" ~ as.Date("2001-04-29"),
+                               TRUE ~ END_DATE2)) %>%
+  mutate(MANAGEMENT_STATUS = case_when(REGULATION_ID == "5058" & REVERSION == "FALSE" ~ "SEASONAL",
+                                       REGULATION_ID == "1172" & REVERSION == "FALSE" ~ "SEASONAL",
+                                       REGULATION_ID == "1175" & REVERSION == "FALSE" ~ "SEASONAL",
+                                       REGULATION_ID == "2603" & REVERSION == "FALSE" ~ "SEASONAL",
+                                       REGULATION_ID == "3093" & REVERSION == "FALSE" ~ "SEASONAL",
+                                       REGULATION_ID == "3933" & REVERSION == "FALSE" ~ "SEASONAL",
+                                       TRUE ~ MANAGEMENT_STATUS)) %>%
+  mutate(MANAGEMENT_STATUS_USE = case_when(REGULATION_ID == "5058" & REVERSION == "FALSE" ~ "SEASONAL",
+                                           REGULATION_ID == "1172" & REVERSION == "FALSE" ~ "SEASONAL",
+                                           REGULATION_ID == "1175" & REVERSION == "FALSE" ~ "SEASONAL",
+                                           REGULATION_ID == "2603" & REVERSION == "FALSE" ~ "SEASONAL",
+                                           REGULATION_ID == "3093" & REVERSION == "FALSE" ~ "SEASONAL",
+                                           REGULATION_ID == "3933" & REVERSION == "FALSE" ~ "SEASONAL",
+                                           TRUE ~ MANAGEMENT_STATUS_USE)) %>%
+  mutate(STATUS_TYPE = case_when(REGULATION_ID == "5058" & REVERSION == "FALSE" ~ "RECURRING",
+                                 REGULATION_ID == "1172" & REVERSION == "FALSE" ~ "RECURRING",
+                                 REGULATION_ID == "1175" & REVERSION == "FALSE" ~ "RECURRING",
+                                 REGULATION_ID == "2603" & REVERSION == "FALSE" ~ "RECURRING",
+                                 REGULATION_ID == "3093" & REVERSION == "FALSE" ~ "RECURRING",
+                                 REGULATION_ID == "3933" & REVERSION == "FALSE" ~ "RECURRING",
+                                 TRUE ~ STATUS_TYPE)) %>%
+  mutate(remove = case_when(REGULATION_ID == "5058" & REVERSION == "TRUE" ~ 1,
+                            REGULATION_ID == "1172" & REVERSION == "TRUE" ~ 1,
+                            REGULATION_ID == "1175" & REVERSION == "TRUE" ~ 1,
+                            TRUE ~ 0)) %>%
+  mutate(END_MONTH = case_when(REGULATION_ID == "1175" & REVERSION == "FALSE" ~ 3,
+                               TRUE ~ END_MONTH)) %>%
+  mutate(END_MONTH_USE= case_when(REGULATION_ID == "1175" & REVERSION == "FALSE" ~ 3,
+                                  TRUE ~ END_MONTH_USE)) %>%
+  mutate(END_DAY= case_when(REGULATION_ID == "1175" & REVERSION == "FALSE" ~ 31,
+                            TRUE ~ END_DAY)) %>%
+  mutate(END_DAY_USE= case_when(REGULATION_ID == "1175" & REVERSION == "FALSE" ~ 31,
+                                TRUE ~ END_DAY_USE)) %>%
+  mutate(FLAG = case_when(REGULATION_ID == "1172" & REVERSION == "FALSE" ~ "YES",
+                          REGULATION_ID == "5058" & REVERSION == "FALSE" ~ "YES",
+                          REGULATION_ID == "1175" & REVERSION == "FALSE" ~ "YES",
+                          REGULATION_ID == "2603" & REVERSION == "FALSE" ~ "YES",
+                          REGULATION_ID == "3093" & REVERSION == "FALSE" ~ "YES",
+                          REGULATION_ID == "3933" & REVERSION == "FALSE" ~ "YES",
+                          TRUE ~ FLAG)) %>%
+  filter(remove == 0) %>%
+  select(-remove)
+
+
+triplimits_276 <- mh_zone_triplimits %>%
+  filter(CLUSTER == "276") %>%   
+  mutate(END_DATE2 = case_when(REGULATION_ID == "5059" ~ as.Date("2017-05-10"),
+                               TRUE ~ END_DATE2)) %>%
+  mutate(START_MONTH = case_when(REGULATION_ID == "3079" ~ 7,
+                                 TRUE ~ START_MONTH)) %>%
+  mutate(START_DAY = case_when(REGULATION_ID == "3079" ~ 1,
+                               TRUE ~ START_DAY)) %>%
+  mutate(START_DAY_USE = case_when(REGULATION_ID == "3079" ~ 1,
+                                   TRUE ~ START_DAY_USE)) %>%
+  mutate(START_YEAR = case_when(REGULATION_ID == "3079" ~ NA,
+                                TRUE ~ START_YEAR))
+
+triplimits_281 <- mh_zone_triplimits %>%
+  filter(CLUSTER == "281") %>%
+  mutate(END_DATE2 = case_when(REGULATION_ID == "11603" ~ as.Date("1997-06-30"),
+                               REGULATION_ID == "11857" ~ as.Date("2015-06-30"),
+                               REGULATION_ID == "3080" ~ as.Date("1996-09-22"),
+                               REGULATION_ID == "5060" ~ as.Date("1997-06-01"),
+                               REGULATION_ID == "2604" ~ as.Date("2015-02-28"),
+                               TRUE ~ END_DATE2)) %>%
+  mutate(remove = case_when(REGULATION_ID == "3080" & REVERSION == "TRUE" ~ 1,
+                            REGULATION_ID == "2604" & REVERSION == "TRUE" ~ 1,
+                            TRUE ~ 0)) %>%
+  filter(remove == 0) %>%
+  select(-remove)
+
+tripllimits_1101 <- mh_zone_triplimits %>%
+  filter(CLUSTER == "1101") %>%
+  mutate(END_DATE2 = case_when(REGULATION_ID == "5037" ~ as.Date("2021-12-31"),
+                               REGULATION_ID == "5036" ~ as.Date("2021-12-31"),
+                               REGULATION_ID == "5035" ~ as.Date("2021-12-31"),
+                               REGULATION_ID == "5034" ~ as.Date("2021-12-31"),
+                               TRUE ~ END_DATE2))
+#join
+trip <- bind_rows(triplimits_108, triplimits_275, triplimits_276, triplimits_281, tripllimits_1101)
+
+zone_remove_flags_filter <- zone_remove_flags %>%
+  filter(!(CLUSTER %in% c(108, 275, 276, 281, 1101)))
+
+mh_data_log_final <- bind_rows(zone_interest_filter, zone_remove_flags, trip)%>%
   arrange(CLUSTER)%>%
   select(-zone_specific_use, -zone_general_use)
-  
-saveRDS(mh_data_log_final, here("ODM-MH-Data_log", "data", "results", paste0('MH_DL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
-
-
