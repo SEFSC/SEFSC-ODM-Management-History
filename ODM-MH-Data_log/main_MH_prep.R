@@ -13,12 +13,12 @@ here::i_am('ODM-MH-Data_log/main_MH_prep.R')
 
 # Create data directories ####
 # Acquire MH data from ODM; have it in the data/raw folder
-if (!dir.exists(here("ODM-MH-Data_log", "data"))){ dir.create(here("data")) }
-if (!dir.exists(here("ODM-MH-Data_log", "data", "raw"))){ dir.create(here("data", "raw")) }
-if (!dir.exists(here("ODM-MH-Data_log", "data", "interim"))){ dir.create(here("data", "interim")) }
-if (!dir.exists(here("ODM-MH-Data_log", "data", "interim", "sector_clusters"))){ dir.create(here("data", "interim", "sector_clusters")) }
-if (!dir.exists(here("ODM-MH-Data_log", "data", "interim", "clusters"))){ dir.create(here("data", "interim", "clusters")) }
-if (!dir.exists(here("ODM-MH-Data_log", "data", "processed"))){ dir.create(here("data", "processed")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data"))){ dir.create(here("ODM-MH-Data_log", "data")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "raw"))){ dir.create(here("ODM-MH-Data_log", "data", "raw")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "interim"))){ dir.create(here("ODM-MH-Data_log", "data", "interim")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "interim", "sector_clusters"))){ dir.create(here("ODM-MH-Data_log", "data", "interim", "sector_clusters")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "interim", "clusters"))){ dir.create(here("ODM-MH-Data_log", "data", "interim", "clusters")) }
+if (!dir.exists(here("ODM-MH-Data_log", "data", "results"))){ dir.create(here("ODM-MH-Data_log", "data", "results")) }
 
 # Define end of time series ####
 end_timeseries =  as.Date("2021-12-31", "%Y-%m-%d")
@@ -57,8 +57,12 @@ source(here('ODM-MH-Data_log', 'MH04_dates.R'))
   # Data frame result: mh_analysis_ready (includes only variables of interest and simple clusters (no multi-reg for now))
 source(here('ODM-MH-Data_log', 'MH05_spp_expansion.R'))
 
+# 6: Zone forks
+  # Data frame result: mh_zone_join
+source(here('ODM-MH-Data_log', 'MH06_zone_forks.R'))
+
 # Idea to add a script here that will link clusters that are dependent on each other to complete the story 
 # Closure, fishing year, and fishing season
 
 # Save environment as .RDS file for testing against a static result
-saveRDS(mh_data_log, here("ODM-MH-Data_log", "data", "processed", paste0('MH_AL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))
+saveRDS(mh_zone_join, here("ODM-MH-Data_log", "data", "results", paste0('MH_DL_', format(Sys.Date(), "%Y%b%d"), '.RDS')))

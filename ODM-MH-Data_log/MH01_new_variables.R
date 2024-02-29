@@ -93,7 +93,10 @@ mh_newvar <- mh_setup %>%
          page = as.numeric(sub(".*FR ", "", FR_CITATION)),
          # CREATE: ADJUSTMENT variable to flag when the MANAGEMENT_TYPE contains the word "ADJUSTMENT" and remove "ADJUSTMENT" from the MANAGEMENT_TYPE name
          # ADJUSTMENT records are never redundant
+         # Added " MANAGEMENT_CATEGORY == "TEMPORAL CONTROLS" & month(INEFFECTIVE_DATE) == 12 & day(INEFFECTIVE_DATE) == 31 ~ 0" due to error in CLUSTER 280
+         # Without this addition, a closure within CLUSTER 280 that ended at the end of the calendar year was being flagged as an adjustment instead of ceasing to exist.
          ADJUSTMENT = case_when(str_detect(MANAGEMENT_TYPE, "ADJUSTMENT") ~ 1,
+                                MANAGEMENT_CATEGORY == "TEMPORAL CONTROLS" & month(INEFFECTIVE_DATE) == 12 & day(INEFFECTIVE_DATE) == 31 ~ 0,
                                 MANAGEMENT_TYPE == "REOPENING" & !is.na(INEFFECTIVE_DATE) ~ 1,
                                 TRUE ~ 0),
          MANAGEMENT_TYPE_USE = case_when(str_detect(MANAGEMENT_TYPE, "ADJUSTMENT") ~ str_replace(MANAGEMENT_TYPE, " ADJUSTMENT", ""),
@@ -170,18 +173,22 @@ mh_newvar <- mh_setup %>%
          END_DATE = case_when(MANAGEMENT_STATUS_USE == "ONCE" &
                                 !is.na(END_DAY) &
                                 !is.na(END_MONTH) &
-                                !is.na(END_YEAR) ~ as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y"),
+                                !is.na(END_YEAR) &
+                                # Added condition on 2/2/24 because of REG_ID 762
+                                as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y") < INEFFECTIVE_DATE ~ as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y"),
                               TRUE ~ INEFFECTIVE_DATE),
          # For records with an END_TIME of "12:01:00 AM", the END_DATE should be reverted to one day prior.
          # This will infer that the regulation remained in place through the end of that day and not one minute into the next day.
          END_DATE = case_when(END_TIME == "12:01:00 AM" ~ END_DATE - 1,
                               TRUE ~ END_DATE),
          # Adjust the end day, time, and day of the week accordingly  
-         # When end tie is 12:01, use the day of end date because the year of February already factored in to determine if its the 28th or 29th
+         # When end time is 12:01, use the day of end date because the year of February already factored in to determine if its the 28th or 29th
          END_DAY_USE = case_when(END_TIME == "12:01:00 AM" & !is.na(END_DATE) ~ as.numeric(day(END_DATE)),
                              TRUE ~ END_DAY),
          END_MONTH_USE = case_when(END_TIME == "12:01:00 AM" & !is.na(END_DATE) ~ as.numeric(month(END_DATE)),
                                  TRUE ~ END_MONTH),
+         END_YEAR_USE = case_when(END_TIME == "12:01:00 AM" & END_MONTH == 1 & END_DAY == 1 ~ END_YEAR - 1,
+                                  TRUE ~ END_YEAR),
          # Retain end time of 12:01 only for recurring regulations where the end day is the 1st
          # Otherwise remove 12:01 from end time or use the reported end time
          END_TIME_USE = case_when(END_TIME == "12:01:00 AM" & STATUS_TYPE == "RECURRING" & END_DAY == 1 ~ END_TIME,

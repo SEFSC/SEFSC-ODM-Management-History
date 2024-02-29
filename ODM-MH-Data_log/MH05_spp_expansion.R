@@ -36,7 +36,7 @@ mh_sp_expanded_y1 <- mh_dates %>%
   # Filter to remove non-DETAILED records
   filter(DETAILED == 'YES') %>%
   # Join to species list table by SPP_NAME, SPP_TYPE, and FMP
-  full_join(., sp_info_use_s, by = c("FMP", "SPP_TYPE", "SPP_NAME")) %>%
+  full_join(., sp_info_use_s, by = join_by("FMP", "SPP_TYPE", "SPP_NAME"), multiple == 'all') %>%
   # Remove SPECIES_GROUP and SPECIES_AGGREGATE that do not appear in the data set or are regulated by FMPs that are not in the data set (i.e., HMS)
   filter(!is.na(REGULATION_ID)) %>%
   mutate(COMMON_NAME_USE = case_when(is.na(COMMON_NAME_USE) ~ SPP_NAME,
@@ -54,7 +54,7 @@ mh_sp_expanded_y2 <- mh_dates %>%
   # Filter to remove non-DETAILED records
   filter(DETAILED == 'YES') %>%
   # Join to species list table by SPP_NAME, SPP_TYPE, and FMP
-  full_join(., sp_info_use_m, by = c("FMP", "SPP_TYPE", "SPP_NAME")) %>%
+  full_join(., sp_info_use_m, by = join_by("FMP", "SPP_TYPE", "SPP_NAME"), multiple == 'all') %>%
   # Remove SPECIES_GROUP and SPECIES_AGGREGATE that do not appear in the dataset or are regulated by FMPs that are not in the dataset (i.e. HMS)
   filter(!is.na(REGULATION_ID), !is.na(ADDED_SP_DATE)) %>%
   mutate(COMMON_NAME_USE = case_when(is.na(COMMON_NAME_USE) ~ SPP_NAME,
@@ -295,16 +295,16 @@ chk_spp <- mh_sp_expanded %>%
   mh_data_log <-  mh_expanded %>%
     #filter(!CLUSTER %in% cluster_drop$CLUSTER,
            #NEVER_IMPLEMENTED == 0) %>%
-    select(CLUSTER, REGULATION_ID, FR_CITATION, FR_URL, FMP, ACTION, ACTION_TYPE, AMENDMENT_NUMBER, ACCOUNTABILITY_MEASURE,
-           MANAGEMENT_CATEGORY, MANAGEMENT_TYPE_USE, MANAGEMENT_STATUS_USE, STATUS_TYPE, DETAILED,
-           JURISDICTION, SECTOR_USE, SUBSECTOR_USE, REGION,ZONE_USE, JURISDICTIONAL_WATERS,
+    select(CLUSTER, REGULATION_ID, FR_CITATION, FR_SECTION, FR_URL, FMP, ACTION, ACTION_TYPE, AMENDMENT_NUMBER, ACCOUNTABILITY_MEASURE,
+           MANAGEMENT_CATEGORY, MANAGEMENT_TYPE, MANAGEMENT_TYPE_USE, MANAGEMENT_STATUS, MANAGEMENT_STATUS_USE, STATUS_TYPE, DETAILED,
+           JURISDICTION, SECTOR, SECTOR_USE, SUBSECTOR, SUBSECTOR_USE, REGION, ZONE, ZONE_USE, JURISDICTIONAL_WATERS,
            COMMON_NAME_USE, SPP_TYPE, SPP_NAME, SPECIES_ITIS_USE,
            ADJUSTMENT, REVERSION, 
            EFFECTIVE_DATE, INEFFECTIVE_DATE, START_DATE2, END_DATE2, diff_days, 
-           START_MONTH, START_DAY_USE, START_YEAR, START_TIME_USE, START_DAY_OF_WEEK_USE, 
-           END_MONTH_USE, END_DAY_USE, END_YEAR, END_TIME_USE, END_DAY_OF_WEEK_USE, 
+           START_MONTH, START_DAY, START_DAY_USE, START_YEAR, START_TIME, START_TIME_USE, START_DAY_OF_WEEK, START_DAY_OF_WEEK_USE, 
+           END_MONTH, END_MONTH_USE, END_DAY, END_DAY_USE, END_YEAR, END_YEAR_USE, END_TIME, END_TIME_USE, END_DAY_OF_WEEK, END_DAY_OF_WEEK_USE, 
            VALUE, VALUE_UNITS,VALUE_TYPE,VALUE_RATE,
-           MULTI_REG, MULTI_REG_CLUSTER, REG_REMOVED, FLAG)
+           MULTI_REG_VALUE, MULTI_REG_FORECAST, MULTI_REG_SEASONAL, MULTI_REG_CLUSTER, REG_REMOVED, NEVER_IMPLEMENTED, FLAG)
            #EFFECTIVE_DATE_FY_1, FY_1, EFFECTIVE_DATE_FY_2, FY_2, EFFECTIVE_DATE_FY_3, FY_3)
-  
+
   

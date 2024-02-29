@@ -24,7 +24,9 @@ mh_dates_prep <- mh_cluster_ids %>%
   # The LINK variable will only be present for regulations that are an ADJUSTMENT
   # The LINK variable indicates the REGULATION_ID of the non-ADJUSTMENT records that occurred before an ADJUSTMENT record
   # The record associated with that REGULATION_ID will go back into effect once the ADJUSTMENT period has ended
-  mutate(LINK = case_when(ADJUSTMENT == 1 & FIRST_REG == 1 ~ 0,
+  # 2/8/24 Update: To remove some confusion related to CATCH LIMITS we are removing reversion records for this MANAGEMENT CATEGORY
+   mutate(LINK = case_when(MANAGEMENT_CATEGORY == "CATCH LIMITS" ~ 0,
+                          ADJUSTMENT == 1 & FIRST_REG == 1 ~ 0,
                           ADJUSTMENT == 1 & lead(REG_REMOVED, 1) == 1 ~ 0,
                           ADJUSTMENT == 1 & lead(ADJUSTMENT, 1) != 1 ~ lead(REGULATION_ID, 1),
                           ADJUSTMENT == 1 & lead(ADJUSTMENT, 2) != 1 ~ lead(REGULATION_ID, 2),
@@ -155,7 +157,8 @@ mh_dates <- mh_reversions %>%
                                  TRUE ~ CHANGE_DATE),
          # When an END_DATE is provided it should be used to signify the END_DATE
          # Otherwise, the CHANGE_DATE should be used for the END_DATE information
-         END_DATE = case_when(!is.na(END_DATE) ~ END_DATE,
+         END_DATE = case_when(EFFECTIVE_DATE == INEFFECTIVE_DATE ~ START_DATE,
+                              !is.na(END_DATE) ~ END_DATE,
                               # is.na(END_YEAR) & !is.na(INEFFECTIVE_DATE) ~ INEFFECTIVE_DATE,
                               TRUE ~ CHANGE_DATE),
          # If the CHANGE_DATE is after the END_DATE and there is an END_DATE provided, then the END_DATE should be used
@@ -165,18 +168,38 @@ mh_dates <- mh_reversions %>%
                               CHANGE_DATE > INEFFECTIVE_DATE & !is.na(INEFFECTIVE_DATE) ~ END_DATE,
                               TRUE ~ CHANGE_DATE),
          # CREATE: the variable of NEVER_IMPLEMENTED to signify regulations that were created but never went into effect
-         # When the MULTI_REG variable is flagged (1), NEVER_IMPLEMENTED should not be flagged (0) meaning the regulation did go into effect
-         # When the diff_days variable is less than or equal to -1 and MULTI_REG is 0, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
+         # When the MULTI_REG_VALUE variable is flagged (1), NEVER_IMPLEMENTED should not be flagged (0) meaning the regulation did go into effect
+         # When the MULTI_REG_SEASONAL variable is flagged (1), NEVER_IMPLEMENTED should not be flagged (0) meaning the regulation did go into effect
+         # When the diff_days variable is less than or equal to -1, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
          # When the START_DATE_USE is after the END_DATE, NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
-         NEVER_IMPLEMENTED = case_when(#MULTI_REG == 1 ~ 0,
+         # When MULTI_REG_FORECAST is flagged (1) and the START_DATE_USE is equal to the START_DATE_USE of a later FR_CITATION, then NEVER_IMPLEMENTED should be flagged (1) meaning the regulation did not go into effect
+         NEVER_IMPLEMENTED = case_when(
+           # Added 2/8/24 to remove confusion related to Catch Limit management types
+                                      MANAGEMENT_CATEGORY == "CATCH LIMITS" ~ 0,
+                                      START_DATE_USE > END_DATE ~ 1,
+                                       MULTI_REG_VALUE == 1 ~ 0,
+                                       MULTI_REG_SEASONAL == 1 ~ 0,
                                        diff_days <= -1 ~ 1,
-                                       START_DATE_USE > END_DATE ~ 1,
+                                       # Added 2/2/24 - if multi reg forcast & only include start year, do not want to flag
+                                       MULTI_REG_FORECAST == 1 & is.na(START_DAY_USE) & is.na(START_MONTH) & !is.na(START_YEAR) ~ 0,
+                                       MULTI_REG_FORECAST == 1 & START_DATE_USE == max(START_DATE_USE[FR_CITATION > FR_CITATION]) ~ 1,
+                                       # Added 2/5/24 to hard code the two cases of WITHDRAWN/DELAYED regulations
+                                       REGULATION_ID %in% c(1355, 1589, 1356, 1463, 1341) ~ 1,
                                        TRUE ~ 0),
          # ADJUST THE START DATE AND START TIME FOR CLUSTER 306 WHEN THE REOPENING ENDS IN THE MIDDLE OF THE DAY
          START_TIME_USE = case_when(lead(!is.na(END_TIME_USE) & STATUS_TYPE == 'SIMPLE' & VALUE == 'OPEN') & START_DATE_USE == lead(END_DATE) + 1 ~ format(as.POSIXct(lead(END_TIME_USE), format = '%I:%M:%S %p') %m+% minutes(1), "%I:%M:%S %p"),
                                     TRUE ~ START_TIME_USE),
          START_DATE_USE = case_when(lead(!is.na(END_TIME_USE) & STATUS_TYPE == 'SIMPLE' & VALUE == 'OPEN') & START_DATE_USE == lead(END_DATE) + 1 ~ lead(END_DATE),
-                                    TRUE ~ START_DATE_USE))
+                                    TRUE ~ START_DATE_USE)) %>%
+    # Added 2/2/24 - fix on end date
+    group_by(CLUSTER, FR_CITATION) %>%
+    mutate(END_DATE_adjust = case_when(MULTI_REG_CLUSTER == 1 ~ max(END_DATE)),
+           END_DATE = case_when(MANAGEMENT_TYPE_USE == "DEFINITION" ~ end_timeseries,
+                                is.na(INEFFECTIVE_DATE) & !is.na(END_DATE_adjust) ~ END_DATE_adjust,
+                                TRUE ~ END_DATE)) %>%
+    # Added 2/2/24 - do not include records that were added because of an adjustment, but not actually implemented
+    filter(!(NEVER_IMPLEMENTED == 1 & REVERSION == TRUE))
   
   # CHECK: Make sure no reversions are also regulation removals
   dim(filter(mh_dates, REG_REMOVED == 1, REVERSION == TRUE))
+  
