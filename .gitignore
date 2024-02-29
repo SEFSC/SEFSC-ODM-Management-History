@@ -9,5 +9,8 @@ processed/
 # Archived raw MH csv files
 data/raw/Archived files/
 
+# Archived Data Logs
+ODM-MH-Data_log/data/results/Archived_DataLogs/
+
 # Gaitlyn's Personal Exploratory Files
 Examples/Testfiles/
