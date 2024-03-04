@@ -16,17 +16,22 @@ This folder includes files used to generate tables matching those submitted in S
 
 ![YellowtailSnapperACLCar](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/990a237c-be26-4813-9ddb-cfbd461735ab)
 
+<ins>Stoplight Parrotfish in the Caribbean</ins>
+![stoplightparrotfishacl](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/bc6dbaaf-dafc-4c85-8d65-cd5f96fd8d9c)
+
 
 <ins>**BAG LIMITS**</ins>
 
 <ins>Red Grouper in the Gulf of Mexico</ins>
-![Red grouper bag limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/9571e870-b5c3-44db-a481-b6c226990a43)
+
+![redgrouperbaglim](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/ab2a7781-35c4-47cd-ab7a-a1b4efe1cc23)
 
 <ins>Red Snapper in the Gulf of Mexico</ins>
-![Red snapper bag limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/0f45fa8f-f792-42b9-9527-ef2ff79d9215)
+![redsnapperbaglim](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/661f04d7-a9c3-4e01-bba3-93997375d626)
 
-<ins>Queen Triggerfish in the South Atlantic</ins>
-![Queen triggerfish recreational bag limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/7d68e79f-6eee-4480-800d-dd01220b1300)
+<ins>Gray Triggerfish in the South Atlantic</ins>
+![graytriggerfishbaglimt](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/3f678629-64c5-4019-9e25-d674278f74f7)
+
 
 <ins>Yellowtail Snapper in the Caribbean</ins>
 ![YellowtailSnapperBagLim](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/9ce7750b-55ed-41c1-89f6-173704e7e87b)
@@ -38,7 +43,7 @@ This folder includes files used to generate tables matching those submitted in S
 <ins>***CREW BAG LIMITS***</ins>
 
 <ins>Red Snapper in the Gulf of Mexico</ins>
-![red snapper crew bag limit](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/dccba9ab-54df-45f9-b46c-845b07514e73)
+![redsnappercrewbaglim](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/992dd812-d75d-4b1d-8372-4428175b72d8)
 
 <ins>**SIZE LIMITS**</ins> 
 
@@ -49,7 +54,7 @@ This folder includes files used to generate tables matching those submitted in S
 ![RedGrouperSizelimCom](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/148f91c6-25ec-4498-bea8-e97dfe81574f)
 
 <ins>Recreational Red Snapper in the Gulf of Mexico</ins>
-![Red snapper size limits rec](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/7140dd05-0a5c-46c9-b505-185b99eb938f)
+![redsnapperrecsizelim](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/ace96a3f-ae3e-4b40-b41a-4d535a9aa7dd)
 
 <ins>Commercial Red Snapper in the Gulf of Mexico</ins>
 ![RedSnapperSizelimCom](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/3af83c53-7ff9-4dd9-9d67-b2bd951f303c)
@@ -67,8 +72,7 @@ This folder includes files used to generate tables matching those submitted in S
 ![GrayTriggerfishSizeLimCom](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/33e13d2d-d206-4f78-89ba-8be388840efa)
 
 <ins>Yellowtail Snapper in the Caribbean</ins>
-
-![YellowtailSnapperSizeLim](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/bd6fa3ef-ebe3-488b-9815-4e400ba6dbf2)
+![YellowtailSnapperSizeLim](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/ce681ae1-d0d8-4a2e-8699-8bc60e1052e2)
 
 <ins>Stoplight Parrotfish in the Caribbean</ins>
 
@@ -77,14 +81,14 @@ This folder includes files used to generate tables matching those submitted in S
 
 <ins>**TRIP LIMITS**</ins>
 
-<ins>Commercial Queen Triggerfish in the South Atlantic</ins>
+<ins>Commercial Gray Triggerfish in the South Atlantic</ins>
+![Graytriggerfishtriplim](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/62fb1cb8-89f0-4211-b4fd-4644bd6dd9f9)
 
-![Queen triggerfish commercial trip limits](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/77c00749-b99a-4f2e-9bff-e3a9151421d1)
 
 <ins>**QUOTA**</ins>
 
 <ins>Recreational Spanish Mackerel in the Gulf of Mexico</ins>
-![Spanish mackerel rec quota](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/58c587ac-484f-4c29-9ab6-cdea888de46c)
+![spanishmackerelquota](https://github.com/SEFSC/SEFSC-ODM-Management-History/assets/115589280/adbac3bb-8fa6-4458-9f9d-226bdf37fdb1)
 
 <ins>**PROHIBITED GEAR**</ins>
 
