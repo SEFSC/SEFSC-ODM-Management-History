@@ -114,8 +114,7 @@ mh_srgr_cleaned <- mh_srgr %>%
           #                   
            #                  SPECIES == 'Centropristis melana' ~ 'BASS, BLACK SEA',
             #               TRUE ~ SPECIES),
-         managed = case_when(SPECIES %in% currently_managed ~ 'Currently managed', TRUE ~ 'Removed from FMP')) %>%
-  filter(REGULATION_ID != "1411")
+         managed = case_when(SPECIES %in% currently_managed ~ 'Currently managed', TRUE ~ 'Removed from FMP'))
 
 chk <- mh_srgr_cleaned %>% ungroup() %>% 
   select(SPECIES, managed) %>% distinct()
