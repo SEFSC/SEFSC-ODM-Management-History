@@ -58,7 +58,7 @@ source(here('ODM-MH-Data_log', 'MH04_dates.R'))
 source(here('ODM-MH-Data_log', 'MH05_spp_expansion.R'))
 
 # 6: Zone forks
-  # Data frame result: mh_zone_join
+  # Data frame result: mh_data_log_final
 source(here('ODM-MH-Data_log', 'MH06_zone_forks.R'))
 
 # Idea to add a script here that will link clusters that are dependent on each other to complete the story 
