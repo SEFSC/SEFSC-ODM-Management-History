@@ -19,6 +19,7 @@
   # Break up species table into two tables
   # Table 1 - Cases when only a single record exists for a species in SPECIES_AGGREGATE or SPECIES_GROUP
   # Table 2 - Cases when more than one record exists for a species in SPECIES_AGGREGATE or SPECIES_GROUP
+  # Table 3 - Cases when COMMON_NAME_USE is ALL
   sp_info_use_s <- sp_info_use %>%
     left_join(count_sp_info_use, by = c("FMP", "SPP_TYPE", "SPP_NAME", "COMMON_NAME_USE")) %>%
     filter(N == 1) %>% 
@@ -27,7 +28,10 @@
     left_join(count_sp_info_use, by = c("FMP", "SPP_TYPE", "SPP_NAME", "COMMON_NAME_USE")) %>%
     filter(N == 2) %>% 
     select(-c(N, FMP_GROUP_ID, SUBGRP_NAME))
-
+  sp_info_use_a <- sp_info_use %>%
+    filter(SPP_NAME == "ALL") %>%
+    select(-c(FMP_GROUP_ID, SUBGRP_NAME, SPP_NAME))
+  
 # Perform expansion of species information for SPECIES_GROUP, SPECIES_AGGREGATE, and COMMON_NAME ALL selections for single records ####
 # Results in the mh_sp_expanded_y1 data frame
 # Records are only expanded for MANAGEMENT_TYPE that are considered DETAILED
@@ -35,8 +39,9 @@
 mh_sp_expanded_y1 <- mh_dates %>%
   # Filter to remove non-DETAILED records
   filter(DETAILED == 'YES') %>%
+  filter(!(SPP_TYPE == "COMMON_NAME" & SPP_NAME != "ALL")) %>%
   # Join to species list table by SPP_NAME, SPP_TYPE, and FMP
-  full_join(., sp_info_use_s, by = join_by("FMP", "SPP_TYPE", "SPP_NAME"), multiple == 'all') %>%
+ full_join(., sp_info_use_s, by = join_by("FMP", "SPP_TYPE", "SPP_NAME"), multiple == 'all') %>%
   # Remove SPECIES_GROUP and SPECIES_AGGREGATE that do not appear in the data set or are regulated by FMPs that are not in the data set (i.e., HMS)
   filter(!is.na(REGULATION_ID)) %>%
   mutate(COMMON_NAME_USE = case_when(is.na(COMMON_NAME_USE) ~ SPP_NAME,
@@ -64,6 +69,25 @@ mh_sp_expanded_y2 <- mh_dates %>%
   # Remove species expansion date variables
   select(-c(SPECIES_ITIS, SCIENTIFIC_NAME))
 
+# Incorporate ADDED_SP_DATE and REMOVED_SP_DATE for records that are not aggregates, groups, or COMMON_NAME = ALL (individual species records)
+# Results in the mh_sp_expanded_y3 data frame
+# Records are only adjusted for DETAILED MANAGEMENT_TYPEs
+  mh_sp_expanded_y3 <- mh_dates %>% 
+    # Filter to remove non-DETAILED records
+    # Filter to cases where SPP_TYPE == "COMMON_NAME"
+    # Filter to remove cases where SPP_NAME == "ALL"
+    filter(DETAILED == "YES") %>%
+    filter(SPP_TYPE == "COMMON_NAME") %>%
+    filter(SPP_NAME != "ALL") %>%
+    # Create SPP_ITIS_USE for join
+    # Create COMMON_NAME_USE for join
+    mutate(SPECIES_ITIS_USE = SPECIES_ITIS) %>%
+    mutate(COMMON_NAME_USE = SPP_NAME) %>%
+    # Join to species list table by FMP, SPP_TYPE, SPECIES_ITIS_USE, COMMON_NAME_USE
+  left_join(sp_info_use_a, by = c("FMP", "SPP_TYPE", "SPECIES_ITIS_USE", "COMMON_NAME_USE")) %>%
+    # Remove species expansion variable
+  select(-c(SCIENTIFIC_NAME))
+  
 # Join data frames that include species expansion information with data frame of non-DETAILED records
 # Results in mh_sp_expanded_n data frame
 # First create data frame of only non-DETAILED records
@@ -77,7 +101,7 @@ mh_sp_expanded_n <- mh_dates %>%
 
 # Join expanded data frames with data frame of non-DETAILED records
 mh_sp_expanded <- mh_sp_expanded_y1 %>%
-  bind_rows(mh_sp_expanded_y2, mh_sp_expanded_n)
+  bind_rows(mh_sp_expanded_y2, mh_sp_expanded_y3, mh_sp_expanded_n)
 
 # REMOVE expanded species that are no longer a part of that group
 # ADJUST START or END DATES using SPECIES ADDED and REMOVED dates
