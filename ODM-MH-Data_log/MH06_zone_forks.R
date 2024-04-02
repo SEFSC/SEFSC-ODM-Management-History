@@ -386,4 +386,4 @@ zone_remove_flags_filter <- zone_remove_flags %>%
 
 mh_data_log_final <- bind_rows(zone_interest_filter, zone_remove_flags, trip)%>%
   arrange(CLUSTER)%>%
-  select(-zone_specific_use, -zone_general_use)
+  select(-zone_specific_use, -zone_general_use, -ZONE_CLASS, -interest_cluster)
