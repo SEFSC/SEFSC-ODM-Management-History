@@ -6,7 +6,7 @@ library(ggrepel)
 library(openxlsx)
 
 # MH dataset 
-mh <- readRDS("C:/Users/sarina.atkinson/Documents/GitHub/SEFSC/SEFSC-ODM-Management-History/ODM-MH-Data_log/data/results/MH_DL_2024Feb29.RDS")
+mh <- readRDS("C:/Users/sarina.atkinson/Documents/GitHub/SEFSC/SEFSC-ODM-Management-History/ODM-MH-Data_log/data/results/MH_DL_2024Mar29.RDS")
 
 # Subset for Gulf Reef Fish
 mh_grf <- mh %>% filter(FMP == "REEF FISH RESOURCES OF THE GULF OF MEXICO") %>%
@@ -108,6 +108,15 @@ mh_grf_cleaned <- mh_grf %>%
                              SPECIES == 'Centropristis melana' ~ 'BASS, BLACK SEA',
                              TRUE ~ SPECIES),
          managed = case_when(SPECIES %in% currently_managed ~ 'Currently managed', TRUE ~ 'Removed from FMP'))
+
+mh_grf2 <- mh_grf %>%
+  mutate(YEAR = year(EFFECTIVE_DATE),
+         SPECIES = case_when(COMMON_NAME_USE == 'Caulolatilus' ~ 'TILEFISHES',
+                             COMMON_NAME_USE == 'JEWFISH' ~ 'GROUPER, GOLIATH',
+                             COMMON_NAME_USE == 'Centropristis melana' ~ 'BASS, BLACK SEA',
+                             TRUE ~ COMMON_NAME_USE),
+         managed = case_when(SPECIES %in% currently_managed ~ 'Currently managed', TRUE ~ 'Removed from FMP'))
+
 
 chk <- mh_grf_cleaned %>% ungroup() %>% 
   select(SPECIES, managed) %>% distinct()
@@ -223,6 +232,10 @@ source("C:/Users/sarina.atkinson/Documents/GitHub/SEFSC/SEFSC-ODM-Management-His
 # Expand closures
 closures <- expand_status(mh_grf, "CLOSURE")
 
+# Save as RDS
+library(here)
+saveRDS(closures, here("Examples", "mh_grf_closures_05APR24.RDS"))
+
 # Filter to main closures for subsector all, zone all
 # Add IFQ
 sum_closures <- closures %>%
@@ -238,13 +251,15 @@ sum_closures <- closures %>%
   bind_rows(mh_grf %>% filter(MANAGEMENT_TYPE_USE == "IFQ PROGRAM ESTABLISHED") %>% ungroup() %>%
               select(REGULATION_ID, CLUSTER, FR_CITATION, SECTOR_USE, SUBSECTOR_USE, COMMON_NAME_USE, VALUE, 
                      START_DATE2, END_DATE2) %>%
-              mutate(END_DATE2 = case_when(COMMON_NAME_USE == 'SNAPPER, RED' ~ max(mh_grf$END_DATE2),
-                                           TRUE ~ END_DATE2),
+              mutate(#END_DATE2 = case_when(COMMON_NAME_USE == 'SNAPPER, RED' ~ max(mh_grf$END_DATE2),
+                                           #TRUE ~ END_DATE2),
                      date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
               unnest(date_sequence) %>%
               mutate(value = 2,
                      type = "IFQ",
                      SECTOR_lab =  paste(SECTOR_USE, SUBSECTOR_USE, sep="-")))
+
+chk <- filter(mh_grf, MANAGEMENT_TYPE_USE == "IFQ PROGRAM ESTABLISHED", COMMON_NAME_USE == 'SNAPPER, RED')
 
 # Plot using expand function
 plot5 <- ggplot(sum_closures, aes(x=date_sequence, y = COMMON_NAME_USE, fill=value)) +
