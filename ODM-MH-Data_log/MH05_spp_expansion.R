@@ -183,7 +183,12 @@ chk_spp <- mh_sp_expanded %>%
            # When IMP_END_DATE is flagged (= 1) the REMOVED_SP_DATE should be used as the END_DATE
            # Otherwise the END_DATE should be used for END_DATE2
            END_DATE2 = case_when(IMP_END_DATE == 1 ~ REMOVED_SP_DATE,
-                                TRUE ~ END_DATE))
+                                TRUE ~ END_DATE)) %>%
+    # Clean cases where Common name is old or where using scientific name
+    mutate(COMMON_NAME_USE = case_when(COMMON_NAME_USE == 'Caulolatilus' ~ 'TILEFISHES',
+                                COMMON_NAME_USE == 'JEWFISH' ~ 'GROUPER, GOLIATH',
+                                COMMON_NAME_USE == 'Centropristis melana' ~ 'BASS, BLACK SEA',
+                                TRUE ~ COMMON_NAME_USE))
   
 # # Expand SPP_NAME ALL fishing year
 # #mh_fy_expanded <- mh_fy3 %>%
