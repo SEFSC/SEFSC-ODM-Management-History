@@ -5,14 +5,14 @@
 librarian::shelf(here, tidyverse, lubridate, dplyr, tidyr, neatRanges, splitstackshape)
 
 # Read in MH Data Log
-mh_data_log <- readRDS(here("ODM-MH-Analysis_ready", "results", "MH_DL_wFY_2024Jan19.RDS"))
+mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Apr09.RDS"))
 
 # Select species and region
 spp <- 'PORGY, RED'
 region <- 'SOUTH ATLANTIC'
 
 # Function to expand dates based on management status
-source(here("ODM-MH-Analysis_ready", "func_expand_status.R"))
+source(here("ODM-MH-Analysis_ready", "Closures", "func_expand_status.R"))
 
 # filter for species and region (all closure related records)
 # Recode management types to have a value
@@ -22,7 +22,7 @@ mh_spp_closure <- mh_data_log %>%
                                     'PROHIBITED SALE AND PURCHASE',
                                     'PROHIBITED SPECIES')) %>%
   mutate(VALUE = case_when(MANAGEMENT_TYPE_USE %in% c('FISHING SEASON', 'FISHING YEAR') ~ 'OPEN',
-                           MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE' & FLAG == 'YES' ~ 'OPEN'
+                           MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE' & FLAG == 'YES' ~ 'OPEN',
                            MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE' & FLAG == 'NO' ~ 'CLOSE',
                            MANAGEMENT_TYPE_USE == 'PROHIBITED SPECIES' ~ 'CLOSE',
                            TRUE ~ VALUE)) %>%
