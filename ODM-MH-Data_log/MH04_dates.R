@@ -176,9 +176,9 @@ mh_dates <- mh_reversions %>%
          NEVER_IMPLEMENTED = case_when(
            # Added 2/8/24 to remove confusion related to Catch Limit management types
                                       MANAGEMENT_CATEGORY == "CATCH LIMITS" ~ 0,
+                                      MULTI_REG_SEASONAL == 1 ~ 0,
                                       START_DATE_USE > END_DATE ~ 1,
                                        MULTI_REG_VALUE == 1 ~ 0,
-                                       MULTI_REG_SEASONAL == 1 ~ 0,
                                        diff_days <= -1 ~ 1,
                                        # Added 2/2/24 - if multi reg forcast & only include start year, do not want to flag
                                        MULTI_REG_FORECAST == 1 & is.na(START_DAY_USE) & is.na(START_MONTH) & !is.na(START_YEAR) ~ 0,
