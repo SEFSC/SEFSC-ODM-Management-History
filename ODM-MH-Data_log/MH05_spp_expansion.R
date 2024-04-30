@@ -188,7 +188,8 @@ chk_spp <- mh_sp_expanded %>%
     mutate(COMMON_NAME_USE = case_when(COMMON_NAME_USE == 'Caulolatilus' ~ 'TILEFISHES',
                                 COMMON_NAME_USE == 'JEWFISH' ~ 'GROUPER, GOLIATH',
                                 COMMON_NAME_USE == 'Centropristis melana' ~ 'BASS, BLACK SEA',
-                                TRUE ~ COMMON_NAME_USE))
+                                TRUE ~ COMMON_NAME_USE)) %>%
+    filter(RM_SPP != 1)
   
 # # Expand SPP_NAME ALL fishing year
 # #mh_fy_expanded <- mh_fy3 %>%
