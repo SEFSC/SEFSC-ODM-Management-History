@@ -55,7 +55,7 @@ zone_interest <- zone_general_use %>%
 zone_specific <- zone_interest %>%
   filter(interest_cluster == 1) %>%
   filter(DETAILED == "YES") %>%
-  filter(!(MANAGEMENT_TYPE_USE == "CLOSURE" | MANAGEMENT_CATEGORY == "CATCH LIMITS" | MANAGEMENT_TYPE_USE == "TRIP LIMIT")) %>%
+  filter(!(MANAGEMENT_CATEGORY == "CATCH LIMITS" | MANAGEMENT_TYPE_USE == "TRIP LIMIT")) %>% #| MANAGEMENT_TYPE_USE == "CLOSURE")) %>%
   filter(!(ZONE_USE %in% gen_areas)) %>%
    group_by(CLUSTER, FR_CITATION, START_DATE2) %>%
   mutate(zone_specific_multi = case_when(ZONE_CLASS == "SPECIFIC" & n()>1 & START_DATE2 != END_DATE2 ~ 1,
@@ -101,10 +101,17 @@ species_all <- zone_link_end %>%
   group_by(CLUSTER) %>%
   mutate(species_all = case_when(SPP_NAME == "ALL" & COMMON_NAME_USE != lead(COMMON_NAME_USE, 1) & START_DATE2 == lead(START_DATE2, 1) ~ 1,
                                  SPP_NAME == "ALL" & COMMON_NAME_USE != lead(COMMON_NAME_USE, 1) & START_DATE2 != lead(START_DATE2, 1) ~ 1,
-                                 TRUE ~0 ))
+                                 TRUE ~ 0))
+
+# create species_aggregate flag to properly link expanded records to their counterpart
+species_agg <- species_all %>%
+  group_by(CLUSTER) %>%
+  arrange(COMMON_NAME_USE, START_DATE2) %>%
+  mutate(species_agg = case_when(MANAGEMENT_CATEGORY == "TEMPORAL CONTROLS" & SPP_TYPE == "SPECIES_AGGREGATE" & COMMON_NAME_USE == lead(COMMON_NAME_USE, 1) & START_DATE2 != lead(START_DATE2, 1) ~ 1,
+                                 TRUE ~ 0))
 
 #Create flags based on specific cases that will be used to link properly
-zone_ordering <- species_all %>%
+zone_ordering <- species_agg %>%
   group_by(CLUSTER) %>%
   arrange(START_DATE2, ZONE_USE) %>%
   filter(NEVER_IMPLEMENTED == 0) %>%
@@ -137,50 +144,57 @@ zone_ordering <- species_all %>%
          zone_specific_specific_multi = case_when(zone_specific_single == 1 & lead(zone_specific_multi, 1) == 1 & ZONE_USE != lead(ZONE_USE) & lead(zone_link_end, 1) == 1 ~ 1),
          zone_specific_specific_change = case_when(ZONE_CLASS == "SPECIFIC" & lead(ZONE_CLASS, 1) == "SPECIFIC" & ZONE_USE != lead(ZONE_USE, 1) & zone_specific_single == 1 & lead(zone_specific_single, 1) == 1 & zone_specific_nochange == 1 & lead(zone_link_end, 1) == 1 ~ 1))
 
+# Create closure specific flags that will be used to create the proper link
+zone_ordering_closure <- zone_ordering %>%
+  group_by(CLUSTER) %>%
+  arrange(COMMON_NAME_USE, START_DATE2) %>%
+  mutate(zone_closure_order = case_when(species_agg == "1" & lead(species_agg, 1) == 0 & COMMON_NAME_USE == lead(COMMON_NAME_USE, 1) ~ 1,
+                                        TRUE ~ 0))
+
 # Create ZONE_LINK
-zone_link <- zone_ordering %>%
+zone_link <- zone_ordering_closure %>%
   group_by(CLUSTER) %>%
   arrange(START_DATE2, ZONE_USE) %>%
-  mutate(ZONE_LINK = case_when(zone_link_na == 1 & zone_specific_specific_general1 == 1 ~ lead(START_DATE2, 2),
-                               zone_link_na == 1 ~ NA,
-                               REG_REMOVED == 1 ~ NA,
-                               species_all == 1 ~ NA,
-                               zone_general_general_value == 1 ~ NA,
-                               zone_specific_nochange_general == 1 ~ lead(START_DATE2, 2),
-                               zone_specific_general_end == 1 ~ NA,
-                               zone_general_multi == 1 ~ lead(START_DATE2, 1),
-                               zone_specific_first == 1 ~ lead(START_DATE2, 2),
-                               zone_specific_second == 1 ~ lead(START_DATE2, 1),
-                               zone_link_final_specific == 1 ~ lead(START_DATE2, 1),
-                               zone_general_general == 1 ~ lead(START_DATE2,1),
-                               zone_general_general_nochange == 1 ~ lead(START_DATE2,1), 
-                               zone_general_general4 == 1 ~ lead(START_DATE2, 4),
-                               zone_specific_general1 == 1 ~ lead(START_DATE2,1),
-                               zone_specific_general2 == 1 ~ lead(START_DATE2,2),
-                               zone_specific_general3 == 1 ~ lead(START_DATE2, 3),
-                               zone_specific_general4 == 1 ~ lead(START_DATE2, 4),
-                               zone_specific_general5 == 1 ~ lead(START_DATE2, 5),
-                               zone_specific_general6 == 1 ~ lead(START_DATE2, 6),
-                               zone_specific_general7 == 1 ~ lead(START_DATE2, 7),
-                               zone_specific_general_single1 == 1 ~ lead(START_DATE2, 1),
-                               zone_general_specific_single == 1 ~ lead(START_DATE2,1),
-                               zone_specific_specific1 == 1 ~ lead(START_DATE2, 1),
-                               zone_specific_specific2 == 1 ~ lead(START_DATE2, 2),
-                               zone_specific_specific3 == 1 ~ lead(START_DATE2, 3),
-                               zone_specific_specific4 == 1 ~ lead(START_DATE2, 3),
-                               zone_specific_specific_multi == 1 ~ lead(START_DATE2, 1),
-                               zone_specific_specific_change == 1 ~ lead(START_DATE2, 1)))
+  mutate(ZONE_LINK = case_when(MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_link_na == 1 & zone_specific_specific_general1 == 1 ~ lead(START_DATE2, 2),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_link_na == 1 ~ NA,
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & REG_REMOVED == 1 ~ NA,
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & species_all == 1 ~ NA,
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_general_general_value == 1 ~ NA,
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_nochange_general == 1 ~ lead(START_DATE2, 2),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_general_end == 1 ~ NA,
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_general_multi == 1 ~ lead(START_DATE2, 1),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_first == 1 ~ lead(START_DATE2, 2),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_second == 1 ~ lead(START_DATE2, 1),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_link_final_specific == 1 ~ lead(START_DATE2, 1),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_general_general == 1 ~ lead(START_DATE2,1),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_general_general_nochange == 1 ~ lead(START_DATE2,1), 
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_general_general4 == 1 ~ lead(START_DATE2, 4),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_general1 == 1 ~ lead(START_DATE2,1),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_general2 == 1 ~ lead(START_DATE2,2),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_general3 == 1 ~ lead(START_DATE2, 3),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_general4 == 1 ~ lead(START_DATE2, 4),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_general5 == 1 ~ lead(START_DATE2, 5),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_general6 == 1 ~ lead(START_DATE2, 6),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_general7 == 1 ~ lead(START_DATE2, 7),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_general_single1 == 1 ~ lead(START_DATE2, 1),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_general_specific_single == 1 ~ lead(START_DATE2,1),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_specific1 == 1 ~ lead(START_DATE2, 1),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_specific2 == 1 ~ lead(START_DATE2, 2),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_specific3 == 1 ~ lead(START_DATE2, 3),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_specific4 == 1 ~ lead(START_DATE2, 3),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_specific_multi == 1 ~ lead(START_DATE2, 1),
+                               MANAGEMENT_CATEGORY != "TEMPORAL CONTROLS" & zone_specific_specific_change == 1 ~ lead(START_DATE2, 1)))
 
-
-zone_species_all <- zone_link %>%
-  group_by(CLUSTER, COMMON_NAME_USE) %>%
-  mutate(zone_link2 = case_when(species_all == 1 ~ lead(START_DATE2, 1))) %>%
-  ungroup()
+# create ZONE_LINK2
+zone_link2 <- zone_link %>%
+  group_by(CLUSTER) %>%
+  arrange(COMMON_NAME_USE, START_DATE2) %>%
+  mutate(ZONE_LINK2 = case_when(CLUSTER == "166" & MANAGEMENT_CATEGORY == "TEMPORAL CONTROLS" & zone_closure_order == 1 ~ lead(as.Date(START_DATE2, 1))))
 
 # Fix END_DATE2
-zone_end <- zone_species_all %>%
+zone_end <- zone_link2 %>%
   mutate(END_DATE2 = case_when(!is.na(ZONE_LINK) & ZONE_LINK < END_DATE2 ~ ZONE_LINK - 1,
-                               !is.na(zone_link2) & zone_link2 < END_DATE2 ~ zone_link2 - 1,
+                               !is.na(ZONE_LINK2) & ZONE_LINK2 < END_DATE2 ~ ZONE_LINK2 - 1,
                                TRUE ~ END_DATE2))         
 
 # Create REVERSION_REMOVE to indicate cases when reversion records do not go into effect because they are overwritten
@@ -199,7 +213,7 @@ zone_remove_flags <- zone_reversion_remove %>%
             zone_general_general, zone_general_general_nochange, zone_general_general4, zone_specific_general_end, zone_specific_general1, zone_specific_general2,
             zone_specific_general3, zone_specific_general4, zone_specific_general5, zone_specific_general6, zone_specific_general7,
             zone_specific_specific_general1, zone_specific_general_single1, zone_general_specific_single, zone_specific_specific1,
-            zone_specific_specific2, zone_specific_specific3, zone_specific_specific4, zone_specific_specific_change, zone_specific_specific_multi, species_all, reversion_remove, ZONE_LINK, zone_link2))
+            zone_specific_specific2, zone_specific_specific3, zone_specific_specific4, zone_specific_specific_change, zone_specific_specific_multi, species_all, reversion_remove, ZONE_LINK, ZONE_LINK2, species_agg, zone_closure_order))
 
 # Join Zone forks with zone_interest
 zone_interest_filter <- zone_interest %>%
@@ -261,7 +275,8 @@ zone_interest_filter <- zone_interest %>%
    "275",
    "276",
    "281",
-   "1101")))
+   "1101",
+   "166")))
 
 # Hard coding trip limits
 mh_zone_triplimits <- zone_interest %>%
@@ -382,7 +397,7 @@ tripllimits_1101 <- mh_zone_triplimits %>%
 trip <- bind_rows(triplimits_108, triplimits_275, triplimits_276, triplimits_281, tripllimits_1101)
 
 zone_remove_flags_filter <- zone_remove_flags %>%
-  filter(!(CLUSTER %in% c(108, 275, 276, 281, 1101)))
+  filter(!(CLUSTER %in% c(108, 275, 276, 281, 1101, 166)))
 
 mh_data_log_final <- bind_rows(zone_interest_filter, zone_remove_flags, trip)%>%
   arrange(CLUSTER)%>%

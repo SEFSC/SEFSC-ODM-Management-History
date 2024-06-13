@@ -53,8 +53,7 @@ source(here('ODM-MH-Data_log', 'MH03_cluster_ids.R'))
 source(here('ODM-MH-Data_log', 'MH04_dates.R'))
 
 # 5: Species expansion and clean up dates ####
-  # Data frame result: mh_expanded2 
-  # Data frame result: mh_analysis_ready (includes only variables of interest and simple clusters (no multi-reg for now))
+  # Data frame result: mh_data_log
 source(here('ODM-MH-Data_log', 'MH05_spp_expansion.R'))
 
 # 6: Zone forks

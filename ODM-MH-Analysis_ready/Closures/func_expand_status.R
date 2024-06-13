@@ -51,9 +51,19 @@ expand_status <- function(x, y) {
              END_YEAR_expand = year(date_sequence)) %>%
       mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH, START_DAY, sep = "-")),
              END_DATE_EXPAND = as.Date(paste(END_YEAR_expand, END_MONTH, END_DAY, sep = "-"))) %>%
+      # Create START_DATE_EXPAND2 & END_DATE_EXPAND2 for cases where the duration of the closure goes from the end of the year to the beginning of the enxt year
+      # Create START_DATE_EXPAND_FINAL & END_DATE_EXPAND_FINAL to choose the correct START_DATE_EXPAND and END_DATE_EXPAND for each set of circumstances
+      mutate(START_DATE_EXPAND2 = case_when(START_DATE_EXPAND > END_DATE_EXPAND ~ START_DATE_EXPAND - lubridate::years(1),
+                                            TRUE ~ START_DATE_EXPAND),
+             END_DATE_EXPAND2 = case_when(START_DATE_EXPAND > END_DATE_EXPAND ~ END_DATE_EXPAND + lubridate::years(1), 
+                                          TRUE ~ END_DATE_EXPAND),
+             START_DATE_EXPAND_FINAL = case_when(START_DATE_EXPAND > END_DATE_EXPAND & date_sequence <= START_DATE_EXPAND ~ START_DATE_EXPAND2,
+                                                 TRUE ~ START_DATE_EXPAND),
+             END_DATE_EXPAND_FINAL = case_when(START_DATE_EXPAND > END_DATE_EXPAND & date_sequence >= START_DATE_EXPAND & date_sequence >= END_DATE_EXPAND ~ END_DATE_EXPAND2,
+                                               TRUE ~ END_DATE_EXPAND)) %>%
       # Remove date_sequence records outside expand range
-      filter(date_sequence >= START_DATE_EXPAND,
-             END_DATE_EXPAND >= date_sequence) %>%
+      filter(date_sequence >= START_DATE_EXPAND_FINAL,
+             END_DATE_EXPAND_FINAL >= date_sequence) %>%
       select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence,  
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE) %>%
       arrange(date_sequence, desc(FR_CITATION)) %>%
