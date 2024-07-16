@@ -1,0 +1,2072 @@
+---
+title: "Summary of Management Actions for [SPECIES] from [REGION] as Documented within the Management History Database"
+output: word_document
+toc: true
+author: "G. Malone"
+date: "2024-07-11"
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+librarian::shelf(here, tidyverse, gt, flextable, officer, dplyr, gt, officer, lubridate, htmltools, rmarkdown)
+```
+
+```{r include = FALSE}
+#### Load MH Data Log ####
+mh_tables_use <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Jun28.RDS"))
+
+here::i_am('Examples/Tables/MH_tables.R')
+source(here('ODM-MH-Data_log', 'main_MH_prep.R'))
+```
+
+```{r include = FALSE}
+#### Define species and region of interest ####
+spp = 'AMBERJACK, GREATER'
+region = 'GULF OF MEXICO'
+
+#### Define table numbers
+table_counter <- 0
+get_table_number <- function () {
+  table_counter <<- table_counter + 1
+  return(table_counter)
+}
+```
+
+
+```{r echo= FALSE}
+message <- paste0("A Management History Database is being compiled, cataloged, and standardized by the National Oceanic and Atmospheric Administration (NOAA), National Marine Fisheries Service (NMFS), Southeast Fisheries Science Center (SEFSC) Fisheries Statistics and Sustainable Fisheries Divisions in collaboration with the Cooperative Institute for Marine and Atmospheric Studies (CIMAS) of the University of Miami.\n\n",
+"The Management History Database effort involves:\n\n",
+"- Identifying Federal Register documentation associated with management actions affecting federally managed species throughout the Gulf of Mexico, South Atlantic, and U.S. Caribbean regions.\n\n",
+"- Creating standardized records specifying the Fishery Management Plan (FMP), species, jurisdiction, and fishing sector (commercial and recreational) to which each management action is applied.\n\n",
+"Once complete, the goal of the database is to provide a comprehensive and standardized record of published management actions to increase the efficiency of fisheries stock assessments, ACL monitoring, and ecosystem approaches. However, the database is still in development and is not yet available to the public. The intention of this working paper is not to replace current management history documents but to provide complementary tables of cited regulations.\n\n",
+"For SEDAR XX, we queried a prototype of the database for records related to ", spp, " in ", region, ". The records associated with [MANAGEMENT TYPEs] were reviewed and are summarized here. Each of these regulation types have been documented through December 31, 202X, as this reflects the records that are currently accessible within the Management History Database. Efforts are currently in progress to document all regulations published from 202X through the present.\n\n",
+"Tables 1-X outline [MANAGEMENT TYPEs] regulations for ", spp, " from ",  region, " as they are currently documented within the Management History Database. Table X provides an overview of closure regulations for the recreational and commercial fisheries. The records detailing closures have been expanded to include the total duration of the closed periods annually for both recurring and distinct regulations, such as seasonal closures and one-time closures.")
+
+cat(message, "\n")
+```
+
+```{r echo = FALSE}
+#### ABC ####
+table_num <- get_table_number()
+
+abc_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'ABC') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+abc_table1 <- abc_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "ABC (round weight)", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". ABC regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+abc_table1$tab[[1]]
+```
+
+
+```{r echo = FALSE}
+#### ACL ####
+table_num <- get_table_number()
+
+acl_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'ACL') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+acl_table1 <- acl_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "ACL (round weight)", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". ACL regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+acl_table1$tab[[1]]
+```
+
+
+```{r echo = FALSE}
+#### ACT ####
+table_num <- get_table_number()
+
+act_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'ACT') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+act_table1 <- act_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "ACT (round weight)", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". ACT regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+act_table1$tab[[1]]
+```
+
+
+```{r echo = FALSE}
+#### MSST ####
+table_num <- get_table_number()
+
+msst_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'MSST') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+msst_table1 <- msst_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "MSST", #### update heading based on value type (pounds/equation)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". MSST regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+msst_table1$tab[[1]]
+```
+
+
+```{r echo = FALSE}
+#### MSY ####
+table_num <- get_table_number()
+
+msy_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'MSY') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+msy_table1 <- msy_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "MSY", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". MSY regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+msy_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MSY PROXY ####
+table_num <- get_table_number()
+
+msyproxy_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'MSY PROXY') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+msyproxy_table1 <- msyproxy_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "MSY PROXY", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". MSY Proxy regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+msyproxy_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MULTI-REGION ABC ####
+table_num <- get_table_number()
+
+multabc_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'MULTI-REGION ABC') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+multabc_table1 <- multabc_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Multi-Region ABC", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Multi-region ABC regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+multabc_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MULTI-REGION ACL ####
+table_num <- get_table_number()
+
+multacl_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'MULTI-REGION ACL') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+multacl_table1 <- multacl_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Multi-Region ACL", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Multi-region ACL regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+multacl_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MULTI-REGION ACT ####
+table_num <- get_table_number()
+
+multact_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'MULTI-REGION ACT') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+multact_table1 <- multact_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Multi-Region ACT", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Multi-region ACT regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+multact_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MULTI-REGION QUOTA ####
+table_num <- get_table_number()
+
+multquota_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'MULTI-REGION QUOTA') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+multquota_table1 <- multquota_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Multi-Region Quota", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Multi-region quota regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+multquota_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MULTI-REGION TAC ####
+table_num <- get_table_number()
+
+multtac_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'MULTI-REGION TAC') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+multtac_table1 <- multtac_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Multi-Region TAC", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Multi-region TAC regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+multtac_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### OFL ####
+table_num <- get_table_number()
+
+ofl_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'OFL') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+ofl_table1 <- ofl_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "OFL (round weight)", #### update heading based on value type (pounds)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". OFL regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+ofl_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### OY ####
+table_num <- get_table_number()
+
+oy_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'OY') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+oy_table1 <- oy_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "OY", #### update heading based on value type (pounds/equation)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". OY regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+oy_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### QUOTA ####
+table_num <- get_table_number()
+
+quota_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'QUOTA') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+quota_table1 <- quota_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Quota (round weight)", #### update heading based on value type (gutted/whole)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Quota regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+quota_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### QUOTA AVAILABLE ####
+table_num <- get_table_number()
+
+quotaavail_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'QUOTA AVAILABLE') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+quotaavail_table1 <- quotaavail_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Quota Available", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Quota available regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+quotaavail_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### QUOTA RELEASED ####
+table_num <- get_table_number()
+
+quotarel_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'QUOTA RELEASED') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+quotarel_table1 <- quotarel_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Quota Released", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Quota released regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+quotarel_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### QUOTA WITHHOLD ####
+table_num <- get_table_number()
+
+quotawith_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'QUOTA WITHHOLD') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+quotawith_table1 <- quotawith_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Quota Withhold", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Quota withhold regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+quotawith_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### TAC ####
+table_num <- get_table_number()
+
+tac_table <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'TAC') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+tac_table1 <- tac_table %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, START_DATE1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "TAC", #### update heading based on value type (pounds/number of fish)
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". TAC regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+tac_table1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MCAT: Effort Limits ####
+#### BAG LIMITS ####
+table_num <- get_table_number()
+
+bag_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'BAG LIMIT') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_RATE), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_RATE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+bag_tab2 <- bag_tab1 %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         VALUE1 = "Bag Limit",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Bag limit regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+bag_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### CREW BAG LIMIT ####
+table_num <- get_table_number()
+
+crewbag_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'CREW BAG LIMIT') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_RATE), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_RATE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+crewbag_tab2 <- crewbag_tab1 %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         VALUE1 = "Crew Bag Limit",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Crew bag limit regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+crewbag_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### CREW SIZE ####
+table_num <- get_table_number()
+
+crewsize_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'CREW SIZE') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_RATE), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_RATE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+crewsize_tab2 <- crewsize_tab1 %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         VALUE1 = "Crew Size",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Crew size limit regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+crewsize_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### HOOK SIZE/TYPE/# ####
+table_num <- get_table_number()
+
+hook_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'HOOK SIZE/TYPE/#') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_TYPE), " ", tolower(VALUE_RATE), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_TYPE), " ", tolower(VALUE_RATE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+hook_tab2 <- hook_tab1 %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         VALUE1 = "Hook number",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Hook number regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+hook_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### LIMITED SPECIES ####
+table_num <- get_table_number()
+
+limspec_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'LIMITED SPECIES') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_RATE), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_RATE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+limspec_tab2 <- limspec_tab1 %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         VALUE1 = "Limited Species",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Limited species regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+limspec_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MAXIMUM GEAR ####
+table_num <- get_table_number()
+
+gear_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'MAXIMUM GEAR') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_TYPE), " ", tolower(VALUE_RATE), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_TYPE), " ", tolower(VALUE_RATE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+gear_tab2 <- gear_tab1 %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         VALUE1 = "Maximum Gear",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Maximum gear regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+gear_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### POSSESSION LIMIT ####
+table_num <- get_table_number()
+
+poss_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'POSSESSION LIMIT') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_TYPE), " ", tolower(VALUE_RATE), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_TYPE), " ", tolower(VALUE_RATE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+poss_tab2 <- poss_tab1 %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         VALUE1 = "Possession Limit",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Possession limit regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+poss_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### SPAWNING SEASON LIMIT ####
+table_num <- get_table_number()
+
+spawn_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'SPAWNING SEASON LIMIT') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_RATE), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_RATE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+spawn_tab2 <- spawn_tab1 %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         VALUE1 = "Spawning Season Limit",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Spawning season limit regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+spawn_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### TRIP LIMIT ####
+table_num <- get_table_number()
+
+trip_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'TRIP LIMIT') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_TYPE), " ", tolower(VALUE_RATE), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), " ", tolower(VALUE_TYPE), " ", tolower(VALUE_RATE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+trip_tab2 <- trip_tab1 %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, MANAGEMENT_TYPE_USE, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         VALUE1 = "Trip Limit",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Trip limit regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+trip_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MCAT: Universal ####
+#### ALLOWABLE SPECIES ####
+
+table_num <- get_table_number()
+
+```
+
+```{r echo = FALSE}
+#### FISHING SEASON ####
+table_num <- get_table_number()
+
+season_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'FISHING SEASON') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         START_MONTH_NAME = month.name[START_MONTH],
+         START_DAY1 = paste0(START_MONTH_NAME, " ", START_DAY),
+         END_MONTH_NAME = month.name[END_MONTH],
+         END_DAY1 = paste0(END_MONTH_NAME, " ", END_DAY),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+season_tab2 <- season_tab1 %>%
+  select(COMMON_NAME_USE, SECTOR1, ZONE1, START_YEAR1, START_DATE1, END_DATE1, START_DAY1, END_DAY1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         START_DAY1 = "Start of Fishing Season",
+                         END_DAY1 = "End of Fishing Season",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Fishing season regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+season_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### FISHING YEAR ####
+table_num <- get_table_number()
+
+year_tab1 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'FISHING YEAR') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  arrange(FR_CITATION) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         START_MONTH_NAME = month.name[START_MONTH],
+         START_DAY1 = paste0(START_MONTH_NAME, " ", START_DAY),
+         END_MONTH_NAME = month.name[END_MONTH],
+         END_DAY1 = paste0(END_MONTH_NAME, " ", END_DAY),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+#Create table
+year_tab2 <- year_tab1 %>%
+  select(COMMON_NAME_USE, SECTOR1, ZONE1, START_YEAR1, START_DATE1, END_DATE1, START_DAY1, END_DAY1, FR_CITATION, ACTION1)%>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         START_DAY1 = "Start of Fishing Year",
+                         END_DAY1 = "End of Fishing YEar",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species",
+                         MANAGEMENT_TYPE_USE = "Management Type") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Fishing year regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+year_tab2$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### IFQ PROGRAM ESTABLISHED ####
+table_num <- get_table_number()
+
+ifq_tab <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'IFQ PROGRAM ESTABLISHED') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = case_when(FLAG == 'YES' ~ str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE, "*")),
+                             FLAG == 'NO' ~ str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE))),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+ifq_tab1 <- ifq_tab %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, FR_CITATION, ACTION1)%>%
+  arrange(ZONE1, START_YEAR1, START_DATE1) %>%
+  do(tab = flextable(.[1:8]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". IFQ regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+ifq_tab1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### ITQ PROGRAM ESTABLISHED ####
+table_num <- get_table_number()
+
+itq_tab <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'ITQ PROGRAM ESTABLISHED') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = case_when(FLAG == 'YES' ~ str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE, "*")),
+                             FLAG == 'NO' ~ str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE))),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+itq_tab1 <- itq_tab %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, FR_CITATION, ACTION1)%>%
+  arrange(ZONE1, START_YEAR1, START_DATE1) %>%
+  do(tab = flextable(.[1:8]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". ITQ regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+itq_tab1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### PROHIBITED SPECIES ####
+table_num <- get_table_number()
+
+prohspec_tab <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'PROHIBITED SPECIES') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = case_when(FLAG == 'YES' ~ str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE, "*")),
+                             FLAG == 'NO' ~ str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE))),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+prohspec_tab1 <- prohspec_tab %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, FR_CITATION, ACTION1)%>%
+  arrange(ZONE1, START_YEAR1, START_DATE1) %>%
+  do(tab = flextable(.[1:8]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Prohibited species regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+prohspec_tab1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MCAT: Gear Requirements ####
+#### PROHIBITED GEAR ####
+table_num <- get_table_number()
+
+prohgear_tab <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'PROHIBITED GEAR') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR_USE)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         SUBSECTOR1 = case_when(FLAG == 'YES' ~ str_to_title(paste0(SUBSECTOR_USE, "*")),
+                                FLAG == 'NO' ~ str_to_title(paste0(SUBSECTOR_USE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+prohgear_tab1 <- prohgear_tab %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, SUBSECTOR1, START_YEAR1, START_DATE1, END_DATE1, FR_CITATION, ACTION1)%>%
+  arrange(ZONE1, SECTOR1, SUBSECTOR1, START_YEAR1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         SUBSECTOR1 = "Gear Type",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Prohibited gear regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+prohgear_tab1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MCAT: Other ####
+#### PROHIBITED SALE AND PURCHASE ####
+table_num <- get_table_number()
+
+prohsale_tab <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'PROHIBITED SALE AND PURCHASE') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = case_when(FLAG == 'YES' ~ str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE, "*")),
+                             FLAG == 'NO' ~ str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE))),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+prohsale_tab1 <- prohsale_tab %>%
+  select(COMMON_NAME_USE, ZONE1, SECTOR1, START_YEAR1, START_DATE1, END_DATE1, FR_CITATION, ACTION1)%>%
+  arrange(ZONE1, SECTOR1, START_YEAR1) %>%
+  do(tab = flextable(.[1:8]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Prohibited sale and purchase regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+prohsale_tab1$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MCAT: Selectivity Controls ####
+#### MAXIMUM/MINIMUM SIZE LIMIT ####
+table_num <- get_table_number()
+
+size_tab2 <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_CATEGORY == 'SELECTIVITY CONTROLS') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  ungroup() %>%
+  mutate(START_DATE4 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE4 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR4 = str_to_title(paste0(SECTOR_USE, "\n", SUBSECTOR_USE)),
+         ZONE4 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE4 = case_when(FLAG == 'YES' ~ paste0(VALUE, " ", tolower(VALUE_UNITS), "*"),
+                            FLAG == 'NO' ~ paste0(VALUE, " ", tolower(VALUE_UNITS))),
+         ACTION4 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR4 = format(START_DATE2, "%Y"),
+         VALUE_TYPE4 = case_when(MANAGEMENT_TYPE_USE == 'MINIMUM SIZE LIMIT' ~ paste0("Minimum", " ", str_to_title(VALUE_TYPE)),
+                                 MANAGEMENT_TYPE_USE == 'MAXIMUM SIZE LIMIT' ~ paste0("Maximum", " ", str_to_title(VALUE_TYPE))),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+size_tab21 <- size_tab2 %>%
+  select(COMMON_NAME_USE, ZONE4, SECTOR4, START_YEAR4, START_DATE4, END_DATE4, VALUE4, VALUE_TYPE4, FR_CITATION, ACTION4)%>%
+  arrange(SECTOR4, START_YEAR4) %>%
+  do(tab = flextable(.[1:10]) %>%
+       set_header_labels(SECTOR4 = "Fishery",
+                         ZONE4 = "Region Affected",
+                         START_YEAR4 = "Start Year",
+                         START_DATE4 = "Effective Date",
+                         END_DATE4 = "End Date",
+                         VALUE4 = "Size Limit",
+                         VALUE_TYPE4 = "Length Type",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION3 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Size limit regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+size_tab21$tab[[1]]
+```
+
+```{r echo = FALSE}
+#### MCAT: Temporal Controls ####
+#### CLOSURE ####
+table_num <- get_table_number()
+
+clos_tab <- mh_tables_use %>%
+  filter(COMMON_NAME_USE == spp, REGION == region, MANAGEMENT_TYPE_USE == 'CLOSURE') %>%
+  filter(NEVER_IMPLEMENTED == 0) %>%
+  group_by(VALUE, ZONE_USE) %>%
+  ungroup() %>%
+  mutate(START_DATE1 = format(START_DATE2, "%m/%d/%Y"),
+         END_DATE1 = format(END_DATE2, "%m/%d/%Y"),
+         SECTOR1 = str_to_title(paste0(SECTOR, "\n", SUBSECTOR)),
+         ZONE1 = str_to_title(paste0(REGION, "\n", ZONE_USE)),
+         VALUE1 = case_when(FLAG == 'YES' ~ str_to_title(paste0(VALUE, "*")),
+                            FLAG == 'NO' ~ str_to_title(paste0(VALUE))),
+         ACTION1 = case_when(is.na(AMENDMENT_NUMBER) & !is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE)),
+                             is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION)),
+                             !is.na(AMENDMENT_NUMBER) & is.na(ACTION_TYPE) ~ str_to_title(paste0(ACTION, " ", AMENDMENT_NUMBER)),
+                             !is.na(AMENDMENT_NUMBER) ~ str_to_title(paste0(ACTION, " ", ACTION_TYPE, " ", AMENDMENT_NUMBER))),
+         START_YEAR1 = format(START_DATE2, "%Y"),
+         COMMON_NAME_USE = str_to_title(paste0(COMMON_NAME_USE)),
+         MANAGEMENT_TYPE_USE = str_to_title(paste0(MANAGEMENT_TYPE_USE)))
+
+
+#Create table
+clos_tab1 <- clos_tab %>%
+  select(COMMON_NAME_USE, SECTOR1, ZONE1, START_YEAR1, START_DATE1, END_DATE1, VALUE1, FR_CITATION, ACTION1)%>%
+  distinct()%>%
+  arrange(SECTOR1, ZONE1, START_DATE1) %>%
+  do(tab = flextable(.[1:9]) %>%
+       set_header_labels(SECTOR1 = "Fishery",
+                         ZONE1 = "Region Affected",
+                         VALUE1 = "Closed",
+                         START_YEAR1 = "Start Year",
+                         START_DATE1 = "Effective Date",
+                         END_DATE1 = "End Date",
+                         FR_CITATION = "FR Reference(s)",
+                         ACTION1 = "Amendment Number or Rule Type",
+                         COMMON_NAME_USE = "Species") %>%
+       merge_v(j = 1, part = "body") %>%
+       merge_v(j = 2, part = "body") %>%
+       merge_v(j = 3, part = "body") %>%
+       merge_v(j = 4, part = "body") %>%
+       merge_v(j = 5, part = "body") %>%
+       merge_v(j = 6, part = "body") %>%
+       theme_box() %>%
+       hline_top(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       hline_bottom(part = "header", border = fp_border(color = "black", width = 2)) %>%
+       fontsize(part = "all", size = 12) %>%
+       font(part = "all", fontname = "Times New Roman") %>%
+       align(part = "all", align = "center"))
+
+# Print the table with a caption
+caption <- paste0("Table ", table_num, ". Closure regulations for ", spp," in ", region, " contained within the Management History Database.")
+cat(caption, "\n")
+clos_tab1$tab[[1]]
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
