@@ -12,7 +12,7 @@
 mh_sect_expanded <- mh_cleaned %>%
   # CREATE: SECTOR_USE variable  
   # Rename "ALL" records to 'RECREATIONAL,COMMERCIAL'
-  mutate(SECTOR_USE = case_when(SECTOR == 'ALL' ~ 'RECREATIONAL,COMMERCIAL',
+  mutate(SECTOR_USE = case_when(MANAGEMENT_CATEGORY != "CATCH LIMITS" & SECTOR == 'ALL' ~ 'RECREATIONAL,COMMERCIAL',
                                 TRUE ~ SECTOR)) %>%
   # Expand SECTOR_USE at the commas
   separate_rows(SECTOR_USE)
@@ -173,10 +173,15 @@ mh_newvar <- mh_setup %>%
          END_DATE = case_when(MANAGEMENT_STATUS_USE == "ONCE" &
                                 !is.na(END_DAY) &
                                 !is.na(END_MONTH) &
-                                !is.na(END_YEAR) &
-                                # Added condition on 2/2/24 because of REG_ID 762
-                                as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y") < INEFFECTIVE_DATE ~ as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y"),
+                                !is.na(END_YEAR) ~ as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y"),
                               TRUE ~ INEFFECTIVE_DATE),
+         # Added condition on 2/2/24 because of REG_ID 762
+         END_DATE = case_when(MANAGEMENT_STATUS_USE == "ONCE" &
+                                !is.na(END_DAY) &
+                                !is.na(END_MONTH) &
+                                !is.na(END_YEAR) &
+                                as.Date(paste(END_MONTH, END_DAY, END_YEAR, sep = "/"), "%m/%d/%Y") > INEFFECTIVE_DATE ~ INEFFECTIVE_DATE,
+                              TRUE ~ END_DATE),
          # For records with an END_TIME of "12:01:00 AM", the END_DATE should be reverted to one day prior.
          # This will infer that the regulation remained in place through the end of that day and not one minute into the next day.
          END_DATE = case_when(END_TIME == "12:01:00 AM" ~ END_DATE - 1,
