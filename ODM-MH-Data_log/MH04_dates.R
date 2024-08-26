@@ -118,7 +118,7 @@ mh_reversions = mh_dates_prep %>%
 # Add END_DATE and CHANGE_DATE logic to sorted records
 # CREATE: END_DATE variable dependent on INEFFECTIVE_DATE of current record, START_DATE of next record,
 # and CHANGE_DATE of current record
-mh_dates <- mh_reversions %>%
+mh_dates1 <- mh_reversions %>%
   # Arrange by CLUSTER, SORT_DATE_USE, vol, and page
   # Group by CLUSTER, ZONE_USE, and MANAGEMENT_STATUS_USE
   arrange(CLUSTER, desc(SORT_DATE_USE), desc(vol), desc(page)) %>%
@@ -194,13 +194,69 @@ mh_dates <- mh_reversions %>%
                                     TRUE ~ START_DATE_USE)) %>%
     # Added 2/2/24 - fix on end date
     group_by(CLUSTER, FR_CITATION) %>%
-    mutate(END_DATE_adjust = case_when(MULTI_REG_CLUSTER == 1 ~ max(END_DATE)),
+    mutate(END_DATE_adjust = case_when(MULTI_REG_VALUE == 1 & MULTI_REG_FORECAST != 1 & MULTI_REG_SEASONAL != 1 ~ max(END_DATE)),
            END_DATE = case_when(MANAGEMENT_TYPE_USE == "DEFINITION" ~ end_timeseries,
-                                is.na(INEFFECTIVE_DATE) & !is.na(END_DATE_adjust) ~ END_DATE_adjust,
+                               # is.na(INEFFECTIVE_DATE) & !is.na(END_DATE_adjust) ~ END_DATE_adjust,
                                 TRUE ~ END_DATE)) %>%
     # Added 2/2/24 - do not include records that were added because of an adjustment, but not actually implemented
     filter(!(NEVER_IMPLEMENTED == 1 & REVERSION == TRUE))
   
   # CHECK: Make sure no reversions are also regulation removals
-  dim(filter(mh_dates, REG_REMOVED == 1, REVERSION == TRUE))
+  dim(filter(mh_dates1, REG_REMOVED == 1, REVERSION == TRUE))
+  
+  # Create date related logic and overwrite end date as needed ####
+  # Results in mh_dates data frame
+  # Add END_DATE and CHANGE_DATE logic to sorted records
+  # CREATE: END_DATE variable dependent on INEFFECTIVE_DATE of current record, START_DATE of next record,
+  # and CHANGE_DATE of current record
+  
+  # Create date related logic to overwrite START_DATE for MCAT: CATCH LIMITS by taking FISHING YEAR and FISHING SEASON into account
+  # Results in mh_dates data frame
+  # CREATE: START_DATE_final to adjust START_DATE for CATCH LIMITS that are impacted by FISHING YEAR OR FISHING SEASON
+  
+  # Filter the mh_dates1 data frame to obtain all CATCH LIMITS records
+  Catchlim <- mh_dates1 %>%
+    filter(MANAGEMENT_CATEGORY == "CATCH LIMITS")
+  
+  # Filter the mh_dates1 data frame to obtain all FISHING YEAR and FISHING SEASON records
+  # Create date related fields to indicate the start and end periods for FISHING YEAR and FISHING SEASON records
+  fishingyearseas <- mh_dates1 %>%
+    filter(MANAGEMENT_TYPE %in% c("FISHING YEAR", "FISHING SEASON")) %>%
+    mutate(START_DAY_fish = START_DAY_USE,
+           START_MONTH_fish = START_MONTH,
+           END_DAY_fish = END_DAY_USE,
+           END_MONTH_fish = END_MONTH_USE,
+           START_DATE_fish = START_DATE,
+           END_DATE_fish = END_DATE,
+           START_DATE_fish1 = as.Date(START_DATE_fish, format = "%Y-%m-%d"),
+           END_DATE_fish1 = as.Date(END_DATE_fish, format = "%Y-%m-%d"),
+           START_YEAR_fish = year(START_DATE_fish1),
+           END_YEAR_fish = year(END_DATE_fish1)) %>%
+    ungroup() %>%
+    select(FMP, MANAGEMENT_TYPE, SPP_NAME, REGION, ZONE_USE, SECTOR, SUBSECTOR, START_DAY_fish, START_MONTH_fish, END_DAY_fish, END_MONTH_fish, START_DATE_fish, END_DATE_fish, START_YEAR_fish, END_YEAR_fish) %>%
+    arrange(FMP, MANAGEMENT_TYPE, SPP_NAME, START_DATE_fish)
+  
+# Join the dataframes by FMP, SPP_NAME, REGION, ZONE_USE, SECTOR, and SUBSECTOR
+# Only keep records where the START_YEAR of the CATCH_LIMIT record is between the START_YEAR and END_YEAR of the FISHING_YEAR/FISHING_SEASON record
+# Adjust the START_DAY and START_MONTH of the CATCH_LIMIT record to reflect the START_DAY and START_MONTH of the FISHING_YEAR/FISHING_SEASON record
+  joined_df <- Catchlim %>%
+    left_join(fishingyearseas, by = c("FMP", "SPP_NAME", "REGION", "ZONE_USE", "SECTOR", "SUBSECTOR")) %>%
+    filter(START_YEAR >= START_YEAR_fish & START_YEAR <= END_YEAR_fish) %>%
+    mutate(START_DAY = START_DAY_fish,
+           START_MONTH = START_MONTH_fish,
+           START_DATE_final = as.Date(paste(START_YEAR, START_MONTH, START_DAY, sep = "-")))
+
+# Join the nonadjusted CATCH_LIMITs back to the original dataframe
+combined_df <- mh_dates1 %>%
+  anti_join(joined_df, by = "REGULATION_ID")
+  
+  # Join the adjusted CATCH_LIMITS to the dataframe
+  mh_dates_combined <- bind_rows(combined_df, joined_df)
+  
+  # For MCAT: CATCH LIMITS, use the created START_DATE_final field to update the START_DATE
+  # For all other records, keep using START_DATE
+  mh_dates <- mh_dates_combined %>%
+    mutate(START_DATE = case_when(!is.na(START_DATE_final) ~ format(START_DATE_final, "%m/%d/%Y"),
+                                  TRUE ~ format(START_DATE, "%m/%d/%Y"))) %>%
+    select(-MANAGEMENT_TYPE.x, -MANAGEMENT_TYPE.y, -START_DAY_fish, -START_MONTH_fish, -END_DAY_fish, -END_MONTH_fish, -START_DATE_fish, -END_DATE_fish, -START_YEAR_fish, -END_YEAR_fish, -START_DATE_final)
   
