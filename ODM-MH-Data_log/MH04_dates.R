@@ -331,7 +331,7 @@ mh_dates1 <- mh_reversions %>%
 
   
   # Subset FISHING YEAR expansion for the join
-  # FISHING YEAR for specific subsector and zone
+  # FISHING YEAR for specific subsector, zone, and species
   mh_fy_sz <- mh_fy3_w %>% 
     filter(SUBSECTOR_USE != 'ALL', ZONE_USE != 'ALL') %>%
     rename(EFFECTIVE_DATE_FY_1_sz = "EFFECTIVE_DATE_FY_1",
@@ -339,7 +339,7 @@ mh_dates1 <- mh_reversions %>%
            FY_1_sz = "FY_1",
            FY_2_sz = "FY_2") %>%
     select(-c(NEW_CLUSTER))
-  # Fishing year for specific zone
+  # Fishing year for specific zone and species
   mh_fy_z <- mh_fy3_w %>% 
     filter(ZONE_USE != 'ALL', SUBSECTOR_USE == 'ALL') %>%
     rename(EFFECTIVE_DATE_FY_1_z = "EFFECTIVE_DATE_FY_1",
@@ -347,14 +347,22 @@ mh_dates1 <- mh_reversions %>%
            FY_1_z = "FY_1",
            FY_2_z = "FY_2") %>%
     select(-c(NEW_CLUSTER, SUBSECTOR_USE))
-  # FISHING YEAR for all zones and subsectors for management types where species expanded
+  # FISHING YEAR for specific species (all zones and subsectors)
+  mh_fy_s <- mh_fy3_w %>%
+    filter(SPP_NAME != "ALL", ZONE_USE == 'ALL', SUBSECTOR_USE == 'ALL') %>%
+    rename(EFFECTIVE_DATE_FY_1_s = "EFFECTIVE_DATE_FY_1",
+           EFFECTIVE_DATE_FY_2_s = "EFFECTIVE_DATE_FY_2",
+           FY_1_s = "FY_1",
+           FY_2_s = "FY_2") %>%
+    select(-c(NEW_CLUSTER, SUBSECTOR_USE, ZONE_USE))
+  # FISHING YEAR for all zones, subsectors, and species for management types where species expanded
   mh_fy_a <- mh_fy3_w %>% 
-    filter(ZONE_USE == 'ALL', SUBSECTOR_USE == 'ALL') %>%
+    filter(ZONE_USE == 'ALL', SUBSECTOR_USE == 'ALL', SPP_NAME == 'ALL') %>%
     rename(EFFECTIVE_DATE_FY_1_a = "EFFECTIVE_DATE_FY_1",
            EFFECTIVE_DATE_FY_2_a = "EFFECTIVE_DATE_FY_2",
            FY_1_a = "FY_1",
            FY_2_a = "FY_2") %>%
-    select(-c(NEW_CLUSTER, SUBSECTOR_USE, ZONE_USE))
+    select(-c(NEW_CLUSTER, SUBSECTOR_USE, ZONE_USE, SPP_NAME))
   
   # Filter the mh_cluster_ids data frame to obtain all CATCH LIMITS records
   Catchlim <- mh_cluster_ids %>%
@@ -370,19 +378,21 @@ mh_dates1 <- mh_reversions %>%
     # When specific to a zone only
     left_join(mh_fy_z, by = join_by("REGION", "FMP", "SECTOR_USE", "ZONE_USE",
                                     "SPP_NAME")) %>%
-    # When general to all zones and subsectors for expanded mtypes
-    left_join(mh_fy_a, by = join_by("REGION", "FMP", "SECTOR_USE",  
+    # When specific to a species only
+    left_join(mh_fy_s, by = join_by("REGION", "FMP", "SECTOR_USE",
                                     "SPP_NAME")) %>%
+    # When general to all zones and subsectors for expanded mtypes
+    left_join(mh_fy_a, by = join_by("REGION", "FMP", "SECTOR_USE")) %>%
     # Take the first non-null value
-    mutate(EFFECTIVE_DATE_FY_1 = coalesce(EFFECTIVE_DATE_FY_1_sz, EFFECTIVE_DATE_FY_1_z, EFFECTIVE_DATE_FY_1_a),
-           EFFECTIVE_DATE_FY_2 = coalesce(EFFECTIVE_DATE_FY_2_sz, EFFECTIVE_DATE_FY_2_z, EFFECTIVE_DATE_FY_2_a),
-           FY_1 = coalesce(FY_1_sz, FY_1_z, FY_1_a),
-           FY_2 = coalesce(FY_2_sz, FY_2_z, FY_2_a)) %>%
+    mutate(EFFECTIVE_DATE_FY_1 = coalesce(EFFECTIVE_DATE_FY_1_sz, EFFECTIVE_DATE_FY_1_z, EFFECTIVE_DATE_FY_1_s, EFFECTIVE_DATE_FY_1_a),
+           EFFECTIVE_DATE_FY_2 = coalesce(EFFECTIVE_DATE_FY_2_sz, EFFECTIVE_DATE_FY_2_z, EFFECTIVE_DATE_FY_2_s, EFFECTIVE_DATE_FY_2_a),
+           FY_1 = coalesce(FY_1_sz, FY_1_z, FY_1_s, FY_1_a),
+           FY_2 = coalesce(FY_2_sz, FY_2_z, FY_2_s, FY_2_a)) %>%
     # Remove unnecessary columns from join
-    select(-c(EFFECTIVE_DATE_FY_1_sz, EFFECTIVE_DATE_FY_1_z, EFFECTIVE_DATE_FY_1_a, 
-              EFFECTIVE_DATE_FY_2_sz, EFFECTIVE_DATE_FY_2_z, EFFECTIVE_DATE_FY_2_a,
-              FY_1_sz, FY_1_z, FY_1_a,
-              FY_2_sz, FY_2_z, FY_2_a))
+    select(-c(EFFECTIVE_DATE_FY_1_sz, EFFECTIVE_DATE_FY_1_z, EFFECTIVE_DATE_FY_1_s, EFFECTIVE_DATE_FY_1_a, 
+              EFFECTIVE_DATE_FY_2_sz, EFFECTIVE_DATE_FY_2_z, EFFECTIVE_DATE_FY_2_s, EFFECTIVE_DATE_FY_2_a,
+              FY_1_sz, FY_1_z, FY_1_s, FY_1_a,
+              FY_2_sz, FY_2_z, FY_2_s, FY_2_a))
   
 # Create logic on how to adjust START_DATE for MANAGEMENT_CATEGORY == CATCH LIMITS with one FISHING YEAR or two FISHING YEAR regulations
   mh_dates_logic <- mh_combine %>%
@@ -487,5 +497,7 @@ mh_dates1 <- mh_reversions %>%
     bind_rows(mh_catchlim_prep) %>%
     bind_rows(mh_removed_catchlim) %>%
     bind_rows(mh_nondetailed) %>%
-    select(-adjustment_number)
+    select(-adjustment_number) %>%
+    mutate(START_DATE_USE = case_when(!is.na(START_DATE_USE) ~ START_DATE_USE,
+                                      TRUE ~ START_DATE))
   
