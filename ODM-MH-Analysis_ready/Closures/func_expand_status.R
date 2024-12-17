@@ -232,6 +232,9 @@ expand_status <- function(x, y) {
     # create final VALUE fields 
     ungroup() %>% 
     rowwise() %>%
+    # For MANAGEMENT_TYPE_USE == "CLOSURE": On a specific date_sequence, if the most recent FR_CITATION applies to multiple closure types (i.e., one time closure and monthly recurring)
+    # Then maintain the more restrictive value (CLOSE)
+    # Otherwise, the most recent FR_CITATION should be maintained with associated value fields
     mutate(max_citation = pmax(FR_CITATION_one, FR_CITATION_seasonal, FR_CITATION_weekly, FR_CITATION_monthly, na.rm = TRUE),
            matched_values = list(c(
              if (isTRUE(FR_CITATION_one == max_citation)) VALUE_one else NULL,
@@ -261,23 +264,6 @@ expand_status <- function(x, y) {
                                       FR_CITATION == FR_CITATION_seasonal ~ VALUE_RATE_seasonal,
                                       FR_CITATION == FR_CITATION_monthly ~ VALUE_RATE_monthly)) %>%
                ungroup()
-    #mutate(FR_CITATION = pmax(FR_CITATION_one, FR_CITATION_seasonal, FR_CITATION_weekly, FR_CITATION_monthly, na.rm = T)) %>%
-    #mutate(VALUE = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_one,
-     #                        FR_CITATION == FR_CITATION_weekly ~ VALUE_weekly,
-      #                       FR_CITATION == FR_CITATION_seasonal ~ VALUE_seasonal,
-       #                      FR_CITATION == FR_CITATION_monthly ~ VALUE_monthly),
-        #   VALUE_UNITS = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_UNITS_one,
-         #                          FR_CITATION == FR_CITATION_weekly ~ VALUE_UNITS_weekly,
-          #                         FR_CITATION == FR_CITATION_seasonal ~ VALUE_UNITS_seasonal,
-           #                        FR_CITATION == FR_CITATION_monthly ~ VALUE_UNITS_monthly),
-           #VALUE_TYPE = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_TYPE_one,
-            #                       FR_CITATION == FR_CITATION_weekly ~ VALUE_TYPE_weekly,
-             #                      FR_CITATION == FR_CITATION_seasonal ~ VALUE_TYPE_seasonal,
-              #                     FR_CITATION == FR_CITATION_monthly ~ VALUE_TYPE_monthly),
-           #VALUE_RATE = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_RATE_one,
-            #                       FR_CITATION == FR_CITATION_weekly ~ VALUE_RATE_weekly,
-             #                      FR_CITATION == FR_CITATION_seasonal ~ VALUE_RATE_seasonal,
-              #                     FR_CITATION == FR_CITATION_monthly ~ VALUE_RATE_monthly))
   
   return(combine)
   
