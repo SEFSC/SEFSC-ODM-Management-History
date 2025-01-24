@@ -22,18 +22,24 @@ expand_status <- function(x, y) {
       mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "1 day")) %>%
       unnest(date_sequence) %>%
       select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, 
-             CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE) %>%
+             CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE, MULTI_REG_VALUE) %>%
       arrange(date_sequence, desc(FR_CITATION)) %>%
       group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
       # Retain only most recent FR if there are 2 records with the same date_sequence
-      slice(1) %>%
+      mutate(num_records = n())  %>%
+      mutate(action_value = case_when(num_records > 1 & MULTI_REG_VALUE != 1 & COMMON_NAME_USE == lag(COMMON_NAME_USE) ~ "slice",
+                                      num_records > 1 & MULTI_REG_VALUE == 1 ~ "keep",
+                                      num_records > 1 & MULTI_REG_VALUE != 1 & COMMON_NAME_USE != lag(COMMON_NAME_USE) ~ "keep",
+                                      TRUE ~ "other")) %>%
+      filter(!(action_value == "slice")) %>%
       rename(CLUSTER_one = "CLUSTER",
              REGULATION_ID_one = "REGULATION_ID",
              FR_CITATION_one = "FR_CITATION",
              VALUE_one = "VALUE",
              VALUE_UNITS_one = "VALUE_UNITS",
              VALUE_TYPE_one = "VALUE_TYPE",
-             VALUE_RATE_one = "VALUE_RATE")
+             VALUE_RATE_one = "VALUE_RATE") %>%
+      select(-num_records, -action_value)
   } else {
     df_one <- data.frame(FMP = character(), COMMON_NAME_USE = character(), REGION = character(), ZONE_USE = character(), 
                             SECTOR_USE = character(), SUBSECTOR_USE = character(), MANAGEMENT_TYPE_USE = character(),
@@ -45,7 +51,7 @@ expand_status <- function(x, y) {
   if('SEASONAL' %in% mstats){
     # Seasonal
     df_seasonal <- filter(df, MANAGEMENT_STATUS_USE == 'SEASONAL') %>%
-      mutate(date_sequence = map2(EFFECTIVE_DATE, END_DATE2, seq, by = "days")) %>%
+      mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
       unnest(date_sequence) %>%
       mutate(START_YEAR_expand = year(date_sequence),
              END_YEAR_expand = year(date_sequence)) %>%
@@ -88,30 +94,53 @@ expand_status <- function(x, y) {
   if('MONTHLY RECURRING' %in% mstats){
     # Monthly
     df_monthly <- filter(df, MANAGEMENT_STATUS == 'MONTHLY RECURRING') %>%
-      mutate(date_sequence = map2(EFFECTIVE_DATE, END_DATE2, seq, by = "days")) %>%
+      mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
       unnest(date_sequence) %>%
+      # Extract year from date_sequence
       mutate(START_YEAR_expand = year(date_sequence),
              END_YEAR_expand = year(date_sequence),
-             # case where the monthly recurring goes from the 15th to the 1st of the following month
+             # Create START_MONTH_expand and END_MONTH_expand to eventually create the dates that are the bounds of which expansion dates should still be included
+             # The conditions address cases where the monthly recurring goes from the middle of one month to the start of next and eventually crosses year boundaries (Gulf red snapper - 15th to the 1st of the following month or 10th to the 1st of the following month)
+             # If the END_DAY_USE is a smaller value than the START_DAY_USE and the day of the date_sequence is a smaller value than the START_DAY_USE and the month of the date_sequence is not January, 
+             # then the START_MONTH_expand should be one month less than the month of the date_sequence
+             # If the END_DAY_USE is a smaller value than the START_DAY_USE and the day of the date_sequence is a smaller value than the START_DAY_USE but the month of the date_sequence is January,
+             # then the START_MONTH_expand should be December
+             # Otherwise, the START_MONTH_EXPAND should reflect the month of the date_sequence
              START_MONTH_expand = case_when(END_DAY_USE < START_DAY_USE & day(date_sequence) < START_DAY_USE & month(date_sequence) != 1 ~ month(date_sequence) - 1,
                                             END_DAY_USE < START_DAY_USE & day(date_sequence) < START_DAY_USE & month(date_sequence) == 1 ~ 12,
                                             TRUE ~ month(date_sequence)),
+             # The conditions address cases where the monthly recurring goes from the middle of one month to the start of the next and eventually crosses year boundaries (Gulf red snapper - 15th to the 1st of the following month or 10th to the 1st of the following month)
+             # If the END_DAY_USE is a smaller value than the START_DAY_USE and the day of the date_sequence is a smaller value than the START_DAY_USE and the month of the date_sequence is not January
+             # then the END_MONTH_expand should be the month of the date_sequence
+             # If the END_DAY_USE is a smaller value than the START_DAY_USE and the day of the date_sequence is greater than or equal to the START_DAY_USE value and the month of the date_sequence + 1 month is less than or equal to 12 (December), 
+             # then the END_MONTH_expand should be the month of the date_sequence plus one month
+             # If the END_MONTH_expand value is smaller than the START_DAY_USE and the day of the date_sequence is greater than or equal to the START_DAY_USE and the month of the date_sequence + 1 is equal to 13,
+             # then the END_MONTH_expand should be January
+             # Otherwise, the month of the date_sequence should be used
              END_MONTH_expand = case_when(END_DAY_USE < START_DAY_USE & day(date_sequence) < START_DAY_USE & month(date_sequence) != 1 ~ month(date_sequence),
                                           END_DAY_USE < START_DAY_USE & day(date_sequence) >= START_DAY_USE & month(date_sequence) + 1 <= 12 ~ month(date_sequence) + 1,
                                           END_DAY_USE < START_DAY_USE & day(date_sequence) >= START_DAY_USE & month(date_sequence) + 1 == 13 ~ 1,
-                                          TRUE ~ month(date_sequence))) %>%
+                                          TRUE ~ month(date_sequence)),
+             # Adjust END_YEAR_expand to address cases where the monthly recurring goes from the middle of one month to the start of the next and eventually crosses year boundaries (Gulf red snapper - 15th to the 1st of the following month or 10th to the 1st of the following month)
+             # If the day of the date_sequence is greater than or equal to the START_DAY_USE and the END_MONTH is January & the month of the date_sequence is December, then the END_YEAR_expand should be changed to the following year
+             # If the day of the date_sequence is less than the START_DAY_USE and the END_MONTH is January and the month of the date_sequence is December, then use the START_YEAR_expand
+             # Otherwise, use the END_YEAR_expand
+             END_YEAR_expand = case_when(day(date_sequence) >= START_DAY_USE & END_MONTH == 1 & month(date_sequence) == 12 ~ END_YEAR_expand + 1,
+                                         day(date_sequence) < START_DAY_USE & END_MONTH == 1 & month(date_sequence) == 12 ~ START_YEAR_expand,
+                                         TRUE ~ END_YEAR_expand)) %>%
       # only include months within the start/end month range
       # when monthly recurring, the start/end month range refers to the first and last month where the recurring closure applies
       # i.e. start month = 2 and end month = 11
       # mean recurring closures start in Feb and end in Nov
       # can't use END_MONTH_expand in filter for cases when the recurring closures spans 2 months (i.e. 15th -1st)
-      filter(START_MONTH_expand >= START_MONTH &
-               START_MONTH_expand <= END_MONTH) %>%
+      #filter(START_MONTH_expand >= START_MONTH &
+      #        START_MONTH_expand <= END_MONTH) %>%
       mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH_expand, START_DAY_USE, sep = "-")),
              END_DATE_EXPAND = as.Date(paste(END_YEAR_expand, END_MONTH_expand, END_DAY_USE, sep = "-"))) %>%
       # Remove date_sequence records outside expand range
-      filter(date_sequence >= START_DATE_EXPAND,
-             date_sequence <= END_DATE_EXPAND) %>%
+      filter(date_sequence == START_DATE_EXPAND |
+               date_sequence == END_DATE_EXPAND |
+               date_sequence > START_DATE_EXPAND & date_sequence < END_DATE_EXPAND) %>%
       select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence,  
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE) %>%
       arrange(date_sequence, desc(FR_CITATION)) %>%
@@ -136,7 +165,7 @@ expand_status <- function(x, y) {
   if('WEEKLY RECURRING' %in% mstats){
     # Weekly
     df_weekly <- filter(df, MANAGEMENT_STATUS_USE == 'WEEKLY RECURRING') %>%
-      mutate(date_sequence = map2(EFFECTIVE_DATE, END_DATE2, seq, by = "days")) %>%
+      mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
       unnest(date_sequence) %>%
       mutate(START_YEAR_expand = year(date_sequence),
              END_YEAR_expand = year(date_sequence)) %>%
@@ -202,23 +231,39 @@ expand_status <- function(x, y) {
     filter(!is.na(FMP)) %>%
     # create final VALUE fields 
     ungroup() %>% 
-    mutate(FR_CITATION = pmax(FR_CITATION_one, FR_CITATION_seasonal, FR_CITATION_weekly, FR_CITATION_monthly, na.rm = T)) %>%
-    mutate(VALUE = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_one,
-                             FR_CITATION == FR_CITATION_weekly ~ VALUE_weekly,
-                             FR_CITATION == FR_CITATION_seasonal ~ VALUE_seasonal,
-                             FR_CITATION == FR_CITATION_monthly ~ VALUE_monthly),
-           VALUE_UNITS = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_UNITS_one,
-                                   FR_CITATION == FR_CITATION_weekly ~ VALUE_UNITS_weekly,
-                                   FR_CITATION == FR_CITATION_seasonal ~ VALUE_UNITS_seasonal,
-                                   FR_CITATION == FR_CITATION_monthly ~ VALUE_UNITS_monthly),
-           VALUE_TYPE = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_TYPE_one,
-                                   FR_CITATION == FR_CITATION_weekly ~ VALUE_TYPE_weekly,
-                                   FR_CITATION == FR_CITATION_seasonal ~ VALUE_TYPE_seasonal,
-                                   FR_CITATION == FR_CITATION_monthly ~ VALUE_TYPE_monthly),
-           VALUE_RATE = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_RATE_one,
-                                   FR_CITATION == FR_CITATION_weekly ~ VALUE_RATE_weekly,
-                                   FR_CITATION == FR_CITATION_seasonal ~ VALUE_RATE_seasonal,
-                                   FR_CITATION == FR_CITATION_monthly ~ VALUE_RATE_monthly))
+    rowwise() %>%
+    # For MANAGEMENT_TYPE_USE == "CLOSURE": On a specific date_sequence, if the most recent FR_CITATION applies to multiple closure types (i.e., one time closure and monthly recurring)
+    # Then maintain the more restrictive value (CLOSE)
+    # Otherwise, the most recent FR_CITATION should be maintained with associated value fields
+    mutate(max_citation = pmax(FR_CITATION_one, FR_CITATION_seasonal, FR_CITATION_weekly, FR_CITATION_monthly, na.rm = TRUE),
+           matched_values = list(c(
+             if (isTRUE(FR_CITATION_one == max_citation)) VALUE_one else NULL,
+             if (isTRUE(FR_CITATION_seasonal == max_citation)) VALUE_seasonal else NULL,
+             if (isTRUE(FR_CITATION_weekly == max_citation)) VALUE_weekly else NULL,
+             if (isTRUE(FR_CITATION_monthly == max_citation)) VALUE_monthly else NULL)),
+           final_value = case_when(
+             MANAGEMENT_TYPE_USE == "CLOSURE" & "CLOSE" %in% unlist(matched_values) ~ "CLOSE",
+             TRUE ~ unlist(matched_values)[1]),
+             FR_CITATION = case_when(
+               final_value == VALUE_one ~ FR_CITATION_one,
+               final_value == VALUE_seasonal ~ FR_CITATION_seasonal,
+               final_value == VALUE_weekly ~ FR_CITATION_weekly,
+               final_value == VALUE_monthly ~ FR_CITATION_monthly,
+               TRUE ~ max_citation),
+               VALUE = final_value,
+               VALUE_UNITS = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_UNITS_one,
+                                       FR_CITATION == FR_CITATION_weekly ~ VALUE_UNITS_weekly,
+                                       FR_CITATION == FR_CITATION_seasonal ~ VALUE_UNITS_seasonal,
+                                       FR_CITATION == FR_CITATION_monthly ~ VALUE_UNITS_monthly),
+               VALUE_TYPE = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_TYPE_one,
+                                      FR_CITATION == FR_CITATION_weekly ~ VALUE_TYPE_weekly,
+                                      FR_CITATION == FR_CITATION_seasonal ~ VALUE_TYPE_seasonal,
+                                      FR_CITATION == FR_CITATION_monthly ~ VALUE_TYPE_monthly),
+               VALUE_RATE = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_RATE_one,
+                                      FR_CITATION == FR_CITATION_weekly ~ VALUE_RATE_weekly,
+                                      FR_CITATION == FR_CITATION_seasonal ~ VALUE_RATE_seasonal,
+                                      FR_CITATION == FR_CITATION_monthly ~ VALUE_RATE_monthly)) %>%
+               ungroup()
   
   return(combine)
   

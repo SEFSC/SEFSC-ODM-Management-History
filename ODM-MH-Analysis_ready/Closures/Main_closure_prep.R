@@ -5,7 +5,7 @@
 librarian::shelf(here, tidyverse, lubridate, dplyr, tidyr, neatRanges, splitstackshape)
 
 # Read in MH Data Log
-mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Jun28.RDS"))
+mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Dec16.RDS"))
 
 # Select species and region
 spp <- 'SNAPPER, RED'
@@ -13,6 +13,7 @@ region <- 'GULF OF MEXICO'
 
 # Function to expand dates based on management status
 source(here("ODM-MH-Analysis_ready", "Closures", "func_expand_status.R"))
+
 
 # filter for species and region (all closure related records)
 # Recode management types to have a value
@@ -66,16 +67,16 @@ spp_closure_story <- spp_year %>%
                      VALUE_close = "VALUE") %>%
               select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_close, VALUE_close),
             by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
- # full_join(spp_prohibited_sale %>%
-  #           rename(FR_CITATION_sale = "FR_CITATION",
-   #                  VALUE_sale = "VALUE") %>%
-    #          select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_sale, VALUE_sale),
-     #       by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
-  #full_join(spp_prohibited_spp %>%
-   #           rename(FR_CITATION_spp = "FR_CITATION",
-    #                 VALUE_spp = "VALUE") %>%
-     #         select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_spp, VALUE_spp),
-      #      by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence)) %>%
+  full_join(spp_prohibited_sale %>%
+             rename(FR_CITATION_sale = "FR_CITATION",
+                     VALUE_sale = "VALUE") %>%
+              select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_sale, VALUE_sale),
+            by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE,  date_sequence)) %>%
+  full_join(spp_prohibited_spp %>%
+              rename(FR_CITATION_spp = "FR_CITATION",
+                     VALUE_spp = "VALUE") %>%
+              select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence, FR_CITATION_spp, VALUE_spp),
+            by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence)) %>%
   arrange(SECTOR_USE, SUBSECTOR_USE, ZONE_USE, date_sequence) %>%
   # Select the most recent FR CITATION
   mutate(FR_CITATION = pmax(FR_CITATION_year, 
@@ -86,17 +87,24 @@ spp_closure_story <- spp_year %>%
                             na.rm = T)) %>%
   # Select the fishery status (open/closed) that applies to the most recent FR
   mutate(VALUE = case_when(FR_CITATION == FR_CITATION_close ~ VALUE_close,
-                          # FR_CITATION == FR_CITATION_sale ~ VALUE_sale,
-                          # FR_CITATION == FR_CITATION_spp ~ VALUE_spp,
+                           FR_CITATION == FR_CITATION_sale ~ VALUE_sale,
+                           FR_CITATION == FR_CITATION_spp ~ VALUE_spp,
                            FR_CITATION == FR_CITATION_season ~ VALUE_season,
-                           FR_CITATION == FR_CITATION_year ~ VALUE_year))
+                           FR_CITATION == FR_CITATION_year ~ VALUE_year)) #%>%
+  select(-FR_CITATION_year, -VALUE_year, -FR_CITATION_season, -VALUE_season, -FR_CITATION_close, -VALUE_close)
 
 summ_spp_closures <- spp_closure_story %>%
   mutate(YEAR = year(date_sequence)) %>%
-  group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, YEAR, FR_CITATION, VALUE) %>% 
+  group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, YEAR) %>% 
+  arrange(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, date_sequence) %>%
+  mutate(change = VALUE != lag(VALUE, default = first(VALUE)) |
+           YEAR != lag(YEAR, default = first(YEAR))) %>%
+  mutate(group = cumsum(change)) %>%
+  group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, YEAR, VALUE, group) %>%
   summarize(ndays = n(),
             start = min(date_sequence),
-            end = max(date_sequence)) %>%
+            end = max(date_sequence),
+            .groups = 'drop') %>%
   arrange(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, YEAR, start)
 
 # Save as Excel to compare to SEDAR MH file

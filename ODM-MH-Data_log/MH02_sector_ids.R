@@ -74,8 +74,10 @@ new_sector_clusters <- mh_newvar %>%
 # Create variables to outline how SUBSECTOR expands ####
 # Process SECTOR_ID that have multi-SUBSECTOR
 # Filter records to include cases where SECTOR has more than one SUBSECTOR for DETAILED MANAGEMENT_TYPE
+# and records where MANAGEMENT_CATEGORY is not equal to CATCH LIMITS  
 multi_subsector <- mh_sector_id %>%
   filter(DETAILED == "YES") %>%
+  filter(MANAGEMENT_CATEGORY != "CATCH LIMITS") %>%
   select(FMP, SECTOR_USE, SECTOR_ID, SUBSECTOR) %>%
   distinct() %>%
   group_by(FMP, SECTOR_USE, SECTOR_ID) %>%
