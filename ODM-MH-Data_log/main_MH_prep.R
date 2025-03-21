@@ -21,7 +21,7 @@ if (!dir.exists(here("ODM-MH-Data_log", "data", "interim", "clusters"))){ dir.cr
 if (!dir.exists(here("ODM-MH-Data_log", "data", "results"))){ dir.create(here("ODM-MH-Data_log", "data", "results")) }
 
 # Define end of time series ####
-end_timeseries =  as.Date("2021-12-31", "%Y-%m-%d")
+end_timeseries =  as.Date("2025-12-31", "%Y-%m-%d")
 
 # 0A. Load species list ####
 # Load work space containing the species list data frame to use in expansion (sp_info_use)
