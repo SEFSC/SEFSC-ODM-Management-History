@@ -21,7 +21,12 @@ expand_status <- function(x, y) {
       filter(END_DATE2 >= START_DATE2) %>%
       mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "1 day")) %>%
       unnest(date_sequence) %>%
-      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, 
+      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
+      mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
+                              date_sequence == END_DATE2 & !is.na(END_TIME) ~ END_TIME,
+                              TRUE ~ NA_character_)) %>%
+      ungroup(0) %>%
+      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE, MULTI_REG_VALUE) %>%
       arrange(date_sequence, desc(FR_CITATION)) %>%
       group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
@@ -35,6 +40,7 @@ expand_status <- function(x, y) {
       rename(CLUSTER_one = "CLUSTER",
              REGULATION_ID_one = "REGULATION_ID",
              FR_CITATION_one = "FR_CITATION",
+             TIME_one = "TIME",
              VALUE_one = "VALUE",
              VALUE_UNITS_one = "VALUE_UNITS",
              VALUE_TYPE_one = "VALUE_TYPE",
@@ -44,7 +50,7 @@ expand_status <- function(x, y) {
     df_one <- data.frame(FMP = character(), COMMON_NAME_USE = character(), REGION = character(), ZONE_USE = character(), 
                             SECTOR_USE = character(), SUBSECTOR_USE = character(), MANAGEMENT_TYPE_USE = character(),
                             date_sequence = as.Date(character()), CLUSTER_one = numeric(), REGULATION_ID_one = numeric(),
-                            FR_CITATION_one = character(), VALUE_one = character(), VALUE_UNITS_one = character(), 
+                            FR_CITATION_one = character(), TIME_one = character(), VALUE_one = character(), VALUE_UNITS_one = character(), 
                             VALUE_TYPE_one = character(), VALUE_RATE_one = character())
   }
    
@@ -53,6 +59,11 @@ expand_status <- function(x, y) {
     df_seasonal <- filter(df, MANAGEMENT_STATUS_USE == 'SEASONAL') %>%
       mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
       unnest(date_sequence) %>%
+      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
+      mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
+                              date_sequence == END_DATE2 & !is.na(END_TIME) ~ END_TIME,
+                              TRUE ~ NA_character_)) %>%
+      ungroup() %>%
       mutate(START_YEAR_expand = year(date_sequence),
              END_YEAR_expand = year(date_sequence)) %>%
       mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH, START_DAY, sep = "-")),
@@ -70,7 +81,7 @@ expand_status <- function(x, y) {
       # Remove date_sequence records outside expand range
       filter(date_sequence >= START_DATE_EXPAND_FINAL,
              END_DATE_EXPAND_FINAL >= date_sequence) %>%
-      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence,  
+      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE) %>%
       arrange(date_sequence, desc(FR_CITATION)) %>%
       group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
@@ -79,6 +90,7 @@ expand_status <- function(x, y) {
       rename(CLUSTER_seasonal = "CLUSTER",
              REGULATION_ID_seasonal = "REGULATION_ID",
              FR_CITATION_seasonal = "FR_CITATION",
+             TIME_seasonal = "TIME",
              VALUE_seasonal = "VALUE",
              VALUE_UNITS_seasonal = "VALUE_UNITS",
              VALUE_TYPE_seasonal = "VALUE_TYPE",
@@ -87,7 +99,7 @@ expand_status <- function(x, y) {
     df_seasonal <- data.frame(FMP = character(), COMMON_NAME_USE = character(), REGION = character(), ZONE_USE = character(), 
                             SECTOR_USE = character(), SUBSECTOR_USE = character(), MANAGEMENT_TYPE_USE = character(),
                             date_sequence = as.Date(character()), CLUSTER_seasonal = numeric(), REGULATION_ID_seasonal = numeric(),
-                            FR_CITATION_seasonal = character(), VALUE_seasonal = character(), VALUE_UNITS_seasonal = character(), 
+                            FR_CITATION_seasonal = character(), TIME_seasonal = character(), VALUE_seasonal = character(), VALUE_UNITS_seasonal = character(), 
                             VALUE_TYPE_seasonal = character(), VALUE_RATE_seasonal = character())
   }
   
@@ -96,6 +108,13 @@ expand_status <- function(x, y) {
     df_monthly <- filter(df, MANAGEMENT_STATUS == 'MONTHLY RECURRING') %>%
       mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
       unnest(date_sequence) %>%
+      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
+      mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
+                              date_sequence == END_DATE2 & !is.na(END_TIME) ~ END_TIME,
+                              day(date_sequence) == START_DAY ~ START_TIME,
+                              day(date_sequence) == END_DAY ~ END_TIME,
+                              TRUE ~ NA_character_)) %>%
+      ungroup() %>%
       # Extract year from date_sequence
       mutate(START_YEAR_expand = year(date_sequence),
              END_YEAR_expand = year(date_sequence),
@@ -141,7 +160,7 @@ expand_status <- function(x, y) {
       filter(date_sequence == START_DATE_EXPAND |
                date_sequence == END_DATE_EXPAND |
                date_sequence > START_DATE_EXPAND & date_sequence < END_DATE_EXPAND) %>%
-      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence,  
+      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE) %>%
       arrange(date_sequence, desc(FR_CITATION)) %>%
       group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
@@ -150,6 +169,7 @@ expand_status <- function(x, y) {
       rename(CLUSTER_monthly = "CLUSTER",
              REGULATION_ID_monthly = "REGULATION_ID",
              FR_CITATION_monthly = "FR_CITATION",
+             TIME_monthly = "TIME",
              VALUE_monthly = "VALUE",
              VALUE_UNITS_monthly = "VALUE_UNITS",
              VALUE_TYPE_monthly = "VALUE_TYPE",
@@ -158,7 +178,7 @@ expand_status <- function(x, y) {
     df_monthly <- data.frame(FMP = character(), COMMON_NAME_USE = character(), REGION = character(), ZONE_USE = character(), 
                             SECTOR_USE = character(), SUBSECTOR_USE = character(), MANAGEMENT_TYPE_USE = character(),
                             date_sequence = as.Date(character()), CLUSTER_monthly = numeric(), REGULATION_ID_monthly = numeric(),
-                            FR_CITATION_monthly = character(), VALUE_monthly = character(), VALUE_UNITS_monthly = character(), 
+                            FR_CITATION_monthly = character(), TIME_monthly = character(), VALUE_monthly = character(), VALUE_UNITS_monthly = character(), 
                             VALUE_TYPE_monthly = character(), VALUE_RATE_monthly = character())
   }
   
@@ -167,10 +187,7 @@ expand_status <- function(x, y) {
     df_weekly <- filter(df, MANAGEMENT_STATUS_USE == 'WEEKLY RECURRING') %>%
       mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
       unnest(date_sequence) %>%
-      mutate(START_YEAR_expand = year(date_sequence),
-             END_YEAR_expand = year(date_sequence)) %>%
-      # function wday formats at Mon, Tue, etc.
-      mutate(Expand_day_of_week = wday(date_sequence, label = TRUE)) %>%
+      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
       # need to get expanded days of the week to match
       mutate(START_DAY_OF_WEEK_EXPAND = case_when(
         START_DAY_OF_WEEK_USE == "MONDAY" ~ "Mon",
@@ -190,10 +207,20 @@ expand_status <- function(x, y) {
           END_DAY_OF_WEEK_USE == "SATURDAY" ~ "Sat",
           END_DAY_OF_WEEK_USE == "SUNDAY" ~ "Sun",
           TRUE ~ END_DAY_OF_WEEK_USE)) %>%
+      mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
+                              date_sequence == END_DATE2 & !is.na(END_TIME) ~ END_TIME,
+                              wday(date_sequence) == START_DAY_OF_WEEK_EXPAND ~ START_TIME,
+                              wday(date_sequence) == END_DAY_OF_WEEK_EXPAND ~ END_TIME,
+                              TRUE ~ NA_character_)) %>%
+      ungroup() %>%
+      mutate(START_YEAR_expand = year(date_sequence),
+             END_YEAR_expand = year(date_sequence)) %>%
+      # function wday formats at Mon, Tue, etc.
+      mutate(Expand_day_of_week = wday(date_sequence, label = TRUE)) %>%
       # Retain on records within expand range
       filter(Expand_day_of_week >= START_DAY_OF_WEEK_EXPAND |
                Expand_day_of_week <= END_DAY_OF_WEEK_EXPAND) %>%
-      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence,  
+      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE) %>%
       arrange(date_sequence, desc(FR_CITATION)) %>%
       group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
@@ -202,6 +229,7 @@ expand_status <- function(x, y) {
       rename(CLUSTER_weekly = "CLUSTER",
              REGULATION_ID_weekly = "REGULATION_ID",
              FR_CITATION_weekly = "FR_CITATION",
+             TIME_weekly = "TIME",
              VALUE_weekly = "VALUE",
              VALUE_UNITS_weekly = "VALUE_UNITS",
              VALUE_TYPE_weekly = "VALUE_TYPE",
@@ -210,7 +238,7 @@ expand_status <- function(x, y) {
     df_weekly <- data.frame(FMP = character(), COMMON_NAME_USE = character(), REGION = character(), ZONE_USE = character(), 
                                SECTOR_USE = character(), SUBSECTOR_USE = character(), MANAGEMENT_TYPE_USE = character(),
                                date_sequence = as.Date(character()), CLUSTER_weekly = numeric(), REGULATION_ID_weekly = numeric(),
-                               FR_CITATION_weekly = character(), VALUE_weekly = character(), VALUE_UNITS_weekly = character(), 
+                               FR_CITATION_weekly = character(), TIME_weekly = character(), VALUE_weekly = character(), VALUE_UNITS_weekly = character(), 
                                VALUE_TYPE_weekly = character(), VALUE_RATE_weekly = character())
   }
   
@@ -250,6 +278,10 @@ expand_status <- function(x, y) {
                final_value == VALUE_weekly ~ FR_CITATION_weekly,
                final_value == VALUE_monthly ~ FR_CITATION_monthly,
                TRUE ~ max_citation),
+               TIME = case_when(FR_CITATION == FR_CITATION_one ~ TIME_one,
+                                FR_CITATION == FR_CITATION_weekly ~ TIME_weekly,
+                                FR_CITATION == FR_CITATION_seasonal ~ TIME_seasonal,
+                                FR_CITATION == FR_CITATION_monthly ~ TIME_monthly),
                VALUE = final_value,
                VALUE_UNITS = case_when(FR_CITATION == FR_CITATION_one ~ VALUE_UNITS_one,
                                        FR_CITATION == FR_CITATION_weekly ~ VALUE_UNITS_weekly,
