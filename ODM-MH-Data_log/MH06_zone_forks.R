@@ -62,6 +62,22 @@ zone_specific <- zone_interest %>%
                                          TRUE ~0))%>%
   ungroup()
 
+# Create data frames containing all records not included in zone_specific
+remaining_records1 <- zone_interest %>%
+  filter(interest_cluster == 0)
+
+remaining_records2 <- zone_interest %>%
+  filter(interest_cluster == 1) %>%
+  filter(MANAGEMENT_CATEGORY == "CATCH LIMITS" | MANAGEMENT_TYPE_USE == "TRIP LIMIT")
+
+remaining_records3 <- zone_interest %>%
+  filter(interest_cluster == 1) %>%
+  filter(DETAILED == "NO")
+
+remaining_records4 <- zone_interest %>%
+  filter(interest_cluster == 1) %>%
+  filter(ZONE_USE %in% gen_areas)
+  
 # Create zone_specific_single to indicate cases where a record is specific and doesn't have a matching FR_CITATION & START_DATE2 of another record and it is not a zone removal
 zone_specific_single <- zone_specific %>%
   group_by(CLUSTER, FR_CITATION, START_DATE2) %>%
@@ -399,6 +415,17 @@ trip <- bind_rows(triplimits_108, triplimits_275, triplimits_276, triplimits_281
 zone_remove_flags_filter <- zone_remove_flags %>%
   filter(!(CLUSTER %in% c(108, 275, 276, 281, 1101, 166)))
 
-mh_data_log_final <- bind_rows(zone_interest_filter, zone_remove_flags, trip)%>%
+mh_data_log_final_prep <- bind_rows(remaining_records1, remaining_records2, remaining_records3, remaining_records4, zone_remove_flags, trip)%>%
   arrange(CLUSTER)%>%
   select(-zone_specific_use, -zone_general_use, -ZONE_CLASS, -interest_cluster)
+
+missing_reg_ids <- mh_data_log %>%
+  anti_join(mh_data_log_final_prep, by = "REGULATION_ID")
+
+missing_summary <- missing_reg_ids %>%
+  count(MANAGEMENT_CATEGORY, MANAGEMENT_TYPE_USE, CLUSTER, REVERSION, NEVER_IMPLEMENTED, REG_REMOVED)
+print(missing_summary)
+
+mh_data_log_final <- bind_rows(mh_data_log_final_prep, missing_reg_ids)%>%
+  arrange(CLUSTER)
+
