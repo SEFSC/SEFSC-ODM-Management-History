@@ -162,12 +162,16 @@ mh_dates1 <- mh_reversions %>%
                                  TRUE ~ CHANGE_DATE),
          CHANGE_DATE = case_when(CHANGE_DATE > lag(CHANGE_DATE) ~ lag(CHANGE_DATE), 
                                  TRUE ~ CHANGE_DATE),
+         # Added 4/30/2025 to address CLUSTERs 925, 1101, and 1504 - these clusters introduce three to four seasonal regulations that are effective at the same time
+         # Prior to implementing this fix, the code was assigning the CHANGE_DATE of these records as the day prior to the start date
+         CHANGE_DATE = case_when(CHANGE_DATE < START_DATE & MULTI_REG_SEASONAL == 1 & diff_days == - 1 & lag(diff_days) == -1 & START_DATE == lag(START_DATE, 2) ~ lag(CHANGE_DATE, 2),
+                                 TRUE ~ CHANGE_DATE),
          # When an END_DATE is provided it should be used to signify the END_DATE
          # Otherwise, the CHANGE_DATE should be used for the END_DATE information
          END_DATE = case_when(EFFECTIVE_DATE == INEFFECTIVE_DATE ~ START_DATE,
                               !is.na(END_DATE) ~ END_DATE,
                               # is.na(END_YEAR) & !is.na(INEFFECTIVE_DATE) ~ INEFFECTIVE_DATE,
-                              TRUE ~ CHANGE_DATE),
+                              TRUE ~ CHANGE_DATE), 
          # If the CHANGE_DATE is after the END_DATE and there is an END_DATE provided, then the END_DATE should be used
          # If the CHANGE_DATE is after the INEFFECTIVE_DATE and an INEFFECTIVE_DATE is provided, then the END_DATE should be used
          # Otherwise, the CHANGE_DATE should be used as the END_DATE
