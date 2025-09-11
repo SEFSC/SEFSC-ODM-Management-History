@@ -8,7 +8,7 @@ librarian::shelf(here, tidyverse, gt, flextable, officer, dplyr, gt, officer, lu
 # Load the MH Data Log
 mh <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2025Sep10.RDS"))
 
-#### Define species and region of interest ####
+#### Define species, region, and sector of interest ####
 species = c('SNAPPER, CUBERA', 'AMBERJACK, GREATER', 'AMBERJACK, LESSER', 'JACK, ALMACO', 'SNAPPER, SILK', 'SNAPPER, QUEEN', 'SNAPPER, BLACKFIN', 'WENCHMAN',
             'DRUM, RED', 'COBIA', 'GROUPER, GAG', 'SNAPPER, GRAY', 'MACKEREL, KING', 'GROUPER, YELLOWEDGE', 'SNAPPER, LANE', 'GROUPER, RED', 'SNAPPER, RED', 
             'SCAMP', 'MACKEREL, SPANISH','HOGFISH', 'SNAPPER, MUTTON', 'SNAPPER, YELLOWTAIL', 'SNAPPER, VERMILION', 'TRIGGERFISH, GRAY', 'TRIGGERFISH, QUEEN')
@@ -16,9 +16,9 @@ region = 'GULF OF MEXICO'
 sector = 'RECREATIONAL'
 
 #### ACLs ####
-# Filter to species and region of interest
-# Remove non-detailed regulations and those that were never implemented
-# Filter to only include records that apply to the entire region (ZONE_USE = ALL) and sector of interest
+# Filter to species, region, and sector of interest
+# Remove non-detailed regulations, those that were never implemented, and those that removed a regulation
+# Adjust variable titles and format
 ACLs <- mh %>%
   filter(COMMON_NAME_USE %in% species,
          REGION %in% region,
@@ -53,7 +53,10 @@ ACLs <- mh %>%
          `FR Reference`, `FR URL`, `Amendment Number or Rule Type`) %>%
   arrange(Species, CLUSTER, `First Year in Effect`)
 
-# Quota
+#### Quotas ####
+# Filter to species, region, and sector of interest
+# Remove non-detailed regulations, those that were never implemented, and those that removed a regulation
+# Adjust variable titles and format
 Quotas <- mh %>%
   filter(COMMON_NAME_USE %in% species,
          REGION %in% region,
@@ -88,7 +91,10 @@ Quotas <- mh %>%
          `FR Reference`, `FR URL`, `Amendment Number or Rule Type`) %>%
   arrange(Species, CLUSTER, `First Year in Effect`)
 
-# ACT
+#### ACTs ####
+# Filter to species, region, and sector of interest
+# Remove non-detailed regulations, those that were never implemented, and those that removed a regulation
+# Adjust variable titles and format
 ACTs <- mh %>%
   filter(COMMON_NAME_USE %in% species,
          REGION %in% region,
@@ -122,7 +128,10 @@ ACTs <- mh %>%
          `FR Reference`, `FR URL`, `Amendment Number or Rule Type`) %>%
   arrange(Species, CLUSTER, `First Year in Effect`)
 
-# TAC
+#### TACs ####
+# Filter to species, region, and sector of interest
+# Remove non-detailed regulations, those that were never implemented, and those that removed a regulation
+# Adjust variable titles and format
 TACs <- mh %>%
   filter(COMMON_NAME_USE %in% species,
          REGION %in% region,
