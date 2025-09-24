@@ -4,25 +4,26 @@
 librarian::shelf(here, tidyverse, lubridate, dplyr, tidyr, neatRanges, splitstackshape)
 
 # Read in MH Data log ####
-# mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2023Nov13.RDS"))
+ mh_data_log <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2024Jul12.RDS"))
 # 
 # # Select species and region ####
-# spp <- 'PORGY, RED'
-# region <- 'SOUTH ATLANTIC'
+ spp <- 'SNAPPER, RED'
+ region <- 'GULF OF MEXICO'
 
 # Seasonal Closures ####
 # Filter dataset to seasonal closure regulations for the specified species and region
-Seasonal_closures <- mh_spp_closure %>%
+Seasonal_closures <- mh_data_log %>%
   filter(MANAGEMENT_TYPE_USE == 'CLOSURE', MANAGEMENT_STATUS_USE == 'SEASONAL', NEVER_IMPLEMENTED == 0, REG_REMOVED == 0)
 
 # Create date_sequence to expand dates between EFFECTIVE_DATE and END_DATE2 
 expand_seasonal <- Seasonal_closures %>%
+  filter(EFFECTIVE_DATE <= END_DATE2) %>%
   mutate(date_sequence = map2(EFFECTIVE_DATE, END_DATE2, seq, by = "days")) %>%
   unnest(date_sequence)
 
 # Add START_YEAR_expand and END_YEAR_expand to extract the year from the date_sequence field
 expand_seasonal_year <- expand_seasonal %>%
-  #rowwise() %>%
+  rowwise() %>%
   mutate(START_YEAR_expand = year(date_sequence),
          END_YEAR_expand = year(date_sequence))
 
@@ -227,7 +228,7 @@ chk <- closure_all %>%
 # Join in Long Form
 # Join Closure Types Together ####
 # Combine closure data frames
-Combined_closures <- bind_rows(add_closure_value_seasonal, add_closure_value_weekly, add_closure_value_one)
+Combined_closures <- bind_rows(add_closure_value_seasonal, add_closure_value_monthly, add_closure_value_one)
 
 # Sort the data frame by date_sequence
 sort_closures <- Combined_closures %>%
@@ -252,7 +253,7 @@ closures_remove_fields <- closures_remove_multi %>%
          -START_DAY_OF_WEEK_EXPAND, -END_DAY_OF_WEEK_EXPAND, -Multi_expand)
 
 # Create EFFECTIVE_YEAR field to indicate the effective year of the closure
-closures_effective_year <- closures_remove_fields %>%
+closures_effective_year <- closures_remove_multi %>%
   mutate(EFFECTIVE_YEAR = year(date_sequence))
 
 # Create EFFECTIVE_MONTH field to indicate the effective month of the closure
