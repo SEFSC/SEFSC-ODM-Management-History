@@ -6,7 +6,7 @@ librarian::shelf(here, tidyverse, gt, flextable, officer, dplyr, gt, officer, lu
 
 #### Load data ####
 # Load the MH Data Log
-mh <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2025Sep10.RDS"))
+mh <- readRDS(here("ODM-MH-Data_log", "data", "results", "MH_DL_2025Nov18.RDS"))
 
 #### Define species, region, and sector of interest ####
 species = c('SNAPPER, CUBERA', 'AMBERJACK, GREATER', 'AMBERJACK, LESSER', 'JACK, ALMACO', 'SNAPPER, SILK', 'SNAPPER, QUEEN', 'SNAPPER, BLACKFIN', 'WENCHMAN',
@@ -24,9 +24,9 @@ ACLs <- mh %>%
          REGION %in% region,
          SECTOR == sector,
          DETAILED == "YES",
-         NEVER_IMPLEMENTED %in% c(0, NA),
+         #NEVER_IMPLEMENTED == 0 | is.na(NEVER_IMPLEMENTED),
          REG_REMOVED == 0,
-         MANAGEMENT_TYPE_USE == "ACL") %>%
+         MANAGEMENT_TYPE_USE == "ACL") #%>%
   arrange(CLUSTER, START_DATE2) %>%
   mutate(Species = case_when(str_detect(COMMON_NAME_USE, ",") ~ {parts <- str_split_fixed(COMMON_NAME_USE, ",", 2)
   str_to_title(str_trim(parts[,2])) %>% paste(str_to_title(str_trim(parts[,1])))},
@@ -62,7 +62,7 @@ Quotas <- mh %>%
          REGION %in% region,
          SECTOR == sector,
          DETAILED == "YES",
-         NEVER_IMPLEMENTED %in% c(0, NA),
+         NEVER_IMPLEMENTED == 0 | is.na(NEVER_IMPLEMENTED),
          REG_REMOVED == 0,
          MANAGEMENT_TYPE_USE == "QUOTA") %>%
   arrange(CLUSTER, START_DATE2) %>%
@@ -100,7 +100,7 @@ ACTs <- mh %>%
          REGION %in% region,
          SECTOR == sector,
          DETAILED == "YES",
-         NEVER_IMPLEMENTED %in% c(0, NA),
+         NEVER_IMPLEMENTED == 0 | is.na(NEVER_IMPLEMENTED),
          MANAGEMENT_TYPE_USE == "ACT") %>%
   arrange(CLUSTER, START_DATE2) %>%
   mutate(Species = case_when(str_detect(COMMON_NAME_USE, ",") ~ {parts <- str_split_fixed(COMMON_NAME_USE, ",", 2)
@@ -137,7 +137,7 @@ TACs <- mh %>%
          REGION %in% region,
          SECTOR == sector,
          DETAILED == "YES",
-         NEVER_IMPLEMENTED %in% c(0, NA),
+         NEVER_IMPLEMENTED == 0 | is.na(NEVER_IMPLEMENTED),
          REG_REMOVED == 0,
          MANAGEMENT_TYPE_USE == "TAC") %>%
   arrange(CLUSTER, START_DATE2) %>%
