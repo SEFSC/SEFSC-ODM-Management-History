@@ -2,6 +2,10 @@
 
 # Standardize and fill in common name for FMP species, species aggregate and species group tables
 # Create work space containing the species list data frame to use in expansion (sp_info_use)
+library(ROracle)
+library(sqldf)
+library(dotenv)
+library(dplyr)
 
 # Connect to the server ####
 con <- dbConnect(dbDriver("Oracle"),
@@ -134,5 +138,6 @@ sp_info_use = bind_rows(fmp_info_use, grp_info_use, agg_info_use) %>%
 rm(con, spp_grp_view, spp_agg_view, spp_itis_xref)
 
 # Save work space
-saveRDS(sp_info_use, here('data', 'interim', 'MH_clean_spp_tables.RDS'))
+library(here)
+saveRDS(sp_info_use, here('ODM-MH-Data_log', 'data', 'interim', 'MH_clean_spp_tables.RDS'))
 

@@ -5,7 +5,7 @@ expand_status <- function(x, y) {
   
   # x = data frame
   # y = management type
-  df = filter(x, MANAGEMENT_TYPE_USE == y,
+  df = dplyr::filter(x, MANAGEMENT_TYPE_USE == y,
               # only retain records that were in effect
               NEVER_IMPLEMENTED == 0, REG_REMOVED == 0)
   
@@ -16,28 +16,28 @@ expand_status <- function(x, y) {
   
   if('ONCE' %in% mstats){
     # One-time event
-    df_one <- filter(df, MANAGEMENT_STATUS_USE == 'ONCE') %>%
-      # this filter should not be needed once we clean up errors in date processing
-      filter(END_DATE2 >= START_DATE2) %>%
-      mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "1 day")) %>%
+    df_one <- dplyr::filter(df, MANAGEMENT_STATUS_USE == 'ONCE') %>%
+      # this dplyr::filter should not be needed once we clean up errors in date processing
+      dplyr::filter(END_DATE2 >= START_DATE2) %>%
+      dplyr::mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "1 day")) %>%
       unnest(date_sequence) %>%
-      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
-      mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
+      dplyr::group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
+      dplyr::mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
                               date_sequence == END_DATE2 & !is.na(END_TIME) ~ END_TIME,
                               TRUE ~ NA_character_)) %>%
-      ungroup(0) %>%
-      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
+      dplyr::ungroup(0) %>%
+      dplyr::select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE, MULTI_REG_VALUE) %>%
-      arrange(date_sequence, desc(FR_CITATION)) %>%
-      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
+      dplyr::arrange(date_sequence, desc(FR_CITATION)) %>%
+      dplyr::group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
       # Retain only most recent FR if there are 2 records with the same date_sequence
-      mutate(num_records = n())  %>%
-      mutate(action_value = case_when(num_records > 1 & MULTI_REG_VALUE != 1 & COMMON_NAME_USE == lag(COMMON_NAME_USE) ~ "slice",
+      dplyr::mutate(num_records = n())  %>%
+      dplyr::mutate(action_value = case_when(num_records > 1 & MULTI_REG_VALUE != 1 & COMMON_NAME_USE == lag(COMMON_NAME_USE) ~ "slice",
                                       num_records > 1 & MULTI_REG_VALUE == 1 ~ "keep",
                                       num_records > 1 & MULTI_REG_VALUE != 1 & COMMON_NAME_USE != lag(COMMON_NAME_USE) ~ "keep",
                                       TRUE ~ "other")) %>%
-      filter(!(action_value == "slice")) %>%
-      rename(CLUSTER_one = "CLUSTER",
+      dplyr::filter(!(action_value == "slice")) %>%
+      dplyr::rename(CLUSTER_one = "CLUSTER",
              REGULATION_ID_one = "REGULATION_ID",
              FR_CITATION_one = "FR_CITATION",
              TIME_one = "TIME",
@@ -45,7 +45,7 @@ expand_status <- function(x, y) {
              VALUE_UNITS_one = "VALUE_UNITS",
              VALUE_TYPE_one = "VALUE_TYPE",
              VALUE_RATE_one = "VALUE_RATE") %>%
-      select(-num_records, -action_value)
+      dplyr::select(-num_records, -action_value)
   } else {
     df_one <- data.frame(FMP = character(), COMMON_NAME_USE = character(), REGION = character(), ZONE_USE = character(), 
                             SECTOR_USE = character(), SUBSECTOR_USE = character(), MANAGEMENT_TYPE_USE = character(),
@@ -56,21 +56,21 @@ expand_status <- function(x, y) {
    
   if('SEASONAL' %in% mstats){
     # Seasonal
-    df_seasonal <- filter(df, MANAGEMENT_STATUS_USE == 'SEASONAL') %>%
-      mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
+    df_seasonal <- dplyr::filter(df, MANAGEMENT_STATUS_USE == 'SEASONAL') %>%
+      dplyr::mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
       unnest(date_sequence) %>%
-      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
-      mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
+      dplyr::group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
+      dplyr::mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
                               date_sequence == END_DATE2 & !is.na(END_TIME) ~ END_TIME,
                               TRUE ~ NA_character_)) %>%
-      ungroup() %>%
-      mutate(START_YEAR_expand = year(date_sequence),
+      dplyr::ungroup() %>%
+      dplyr::mutate(START_YEAR_expand = year(date_sequence),
              END_YEAR_expand = year(date_sequence)) %>%
-      mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH, START_DAY, sep = "-")),
+      dplyr::mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH, START_DAY, sep = "-")),
              END_DATE_EXPAND = as.Date(paste(END_YEAR_expand, END_MONTH, END_DAY, sep = "-"))) %>%
       # Create START_DATE_EXPAND2 & END_DATE_EXPAND2 for cases where the duration of the closure goes from the end of the year to the beginning of the enxt year
       # Create START_DATE_EXPAND_FINAL & END_DATE_EXPAND_FINAL to choose the correct START_DATE_EXPAND and END_DATE_EXPAND for each set of circumstances
-      mutate(START_DATE_EXPAND2 = case_when(START_DATE_EXPAND > END_DATE_EXPAND ~ START_DATE_EXPAND - lubridate::years(1),
+      dplyr::mutate(START_DATE_EXPAND2 = case_when(START_DATE_EXPAND > END_DATE_EXPAND ~ START_DATE_EXPAND - lubridate::years(1),
                                             TRUE ~ START_DATE_EXPAND),
              END_DATE_EXPAND2 = case_when(START_DATE_EXPAND > END_DATE_EXPAND ~ END_DATE_EXPAND + lubridate::years(1), 
                                           TRUE ~ END_DATE_EXPAND),
@@ -79,15 +79,15 @@ expand_status <- function(x, y) {
              END_DATE_EXPAND_FINAL = case_when(START_DATE_EXPAND > END_DATE_EXPAND & date_sequence >= START_DATE_EXPAND & date_sequence >= END_DATE_EXPAND ~ END_DATE_EXPAND2,
                                                TRUE ~ END_DATE_EXPAND)) %>%
       # Remove date_sequence records outside expand range
-      filter(date_sequence >= START_DATE_EXPAND_FINAL,
+      dplyr::filter(date_sequence >= START_DATE_EXPAND_FINAL,
              END_DATE_EXPAND_FINAL >= date_sequence) %>%
-      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
+      dplyr::select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE) %>%
-      arrange(date_sequence, desc(FR_CITATION)) %>%
-      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
+      dplyr::arrange(date_sequence, desc(FR_CITATION)) %>%
+      dplyr::group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
       # Retain only most recent FR if there are 2 records with the same date_sequence
-      slice(1) %>%
-      rename(CLUSTER_seasonal = "CLUSTER",
+      dplyr::slice(1) %>%
+      dplyr::rename(CLUSTER_seasonal = "CLUSTER",
              REGULATION_ID_seasonal = "REGULATION_ID",
              FR_CITATION_seasonal = "FR_CITATION",
              TIME_seasonal = "TIME",
@@ -105,18 +105,18 @@ expand_status <- function(x, y) {
   
   if('MONTHLY RECURRING' %in% mstats){
     # Monthly
-    df_monthly <- filter(df, MANAGEMENT_STATUS == 'MONTHLY RECURRING') %>%
-      mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
+    df_monthly <- dplyr::filter(df, MANAGEMENT_STATUS == 'MONTHLY RECURRING') %>%
+      dplyr::mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
       unnest(date_sequence) %>%
-      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
-      mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
+      dplyr::group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
+      dplyr::mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
                               date_sequence == END_DATE2 & !is.na(END_TIME) ~ END_TIME,
                               day(date_sequence) == START_DAY ~ START_TIME,
                               day(date_sequence) == END_DAY ~ END_TIME,
                               TRUE ~ NA_character_)) %>%
-      ungroup() %>%
+      dplyr::ungroup() %>%
       # Extract year from date_sequence
-      mutate(START_YEAR_expand = year(date_sequence),
+      dplyr::mutate(START_YEAR_expand = year(date_sequence),
              END_YEAR_expand = year(date_sequence),
              # Create START_MONTH_expand and END_MONTH_expand to eventually create the dates that are the bounds of which expansion dates should still be included
              # The conditions address cases where the monthly recurring goes from the middle of one month to the start of next and eventually crosses year boundaries (Gulf red snapper - 15th to the 1st of the following month or 10th to the 1st of the following month)
@@ -151,22 +151,22 @@ expand_status <- function(x, y) {
       # when monthly recurring, the start/end month range refers to the first and last month where the recurring closure applies
       # i.e. start month = 2 and end month = 11
       # mean recurring closures start in Feb and end in Nov
-      # can't use END_MONTH_expand in filter for cases when the recurring closures spans 2 months (i.e. 15th -1st)
-      #filter(START_MONTH_expand >= START_MONTH &
+      # can't use END_MONTH_expand in dplyr::filter for cases when the recurring closures spans 2 months (i.e. 15th -1st)
+      #dplyr::filter(START_MONTH_expand >= START_MONTH &
       #        START_MONTH_expand <= END_MONTH) %>%
-      mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH_expand, START_DAY_USE, sep = "-")),
+      dplyr::mutate(START_DATE_EXPAND = as.Date(paste(START_YEAR_expand, START_MONTH_expand, START_DAY_USE, sep = "-")),
              END_DATE_EXPAND = as.Date(paste(END_YEAR_expand, END_MONTH_expand, END_DAY_USE, sep = "-"))) %>%
       # Remove date_sequence records outside expand range
-      filter(date_sequence == START_DATE_EXPAND |
+      dplyr::filter(date_sequence == START_DATE_EXPAND |
                date_sequence == END_DATE_EXPAND |
                date_sequence > START_DATE_EXPAND & date_sequence < END_DATE_EXPAND) %>%
-      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
+      dplyr::select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE) %>%
-      arrange(date_sequence, desc(FR_CITATION)) %>%
-      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
+      dplyr::arrange(date_sequence, desc(FR_CITATION)) %>%
+      dplyr::group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
       # Retain only most recent FR if there are 2 records with the same date_sequence
-      slice(1) %>%
-      rename(CLUSTER_monthly = "CLUSTER",
+      dplyr::slice(1) %>%
+      dplyr::rename(CLUSTER_monthly = "CLUSTER",
              REGULATION_ID_monthly = "REGULATION_ID",
              FR_CITATION_monthly = "FR_CITATION",
              TIME_monthly = "TIME",
@@ -184,12 +184,12 @@ expand_status <- function(x, y) {
   
   if('WEEKLY RECURRING' %in% mstats){
     # Weekly
-    df_weekly <- filter(df, MANAGEMENT_STATUS_USE == 'WEEKLY RECURRING') %>%
-      mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
+    df_weekly <- dplyr::filter(df, MANAGEMENT_STATUS_USE == 'WEEKLY RECURRING') %>%
+      dplyr::mutate(date_sequence = map2(START_DATE2, END_DATE2, seq, by = "days")) %>%
       unnest(date_sequence) %>%
-      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
+      dplyr::group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, CLUSTER) %>%
       # need to get expanded days of the week to match
-      mutate(START_DAY_OF_WEEK_EXPAND = case_when(
+      dplyr::mutate(START_DAY_OF_WEEK_EXPAND = case_when(
         START_DAY_OF_WEEK_USE == "MONDAY" ~ "Mon",
         START_DAY_OF_WEEK_USE == "TUESDAY" ~ "Tue",
         START_DAY_OF_WEEK_USE == "WEDNESDAY" ~ "Wed",
@@ -207,26 +207,26 @@ expand_status <- function(x, y) {
           END_DAY_OF_WEEK_USE == "SATURDAY" ~ "Sat",
           END_DAY_OF_WEEK_USE == "SUNDAY" ~ "Sun",
           TRUE ~ END_DAY_OF_WEEK_USE)) %>%
-      mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
+      dplyr::mutate(TIME = case_when(date_sequence == START_DATE2 & !is.na(START_TIME) ~ START_TIME,
                               date_sequence == END_DATE2 & !is.na(END_TIME) ~ END_TIME,
                               wday(date_sequence) == START_DAY_OF_WEEK_EXPAND ~ START_TIME,
                               wday(date_sequence) == END_DAY_OF_WEEK_EXPAND ~ END_TIME,
                               TRUE ~ NA_character_)) %>%
-      ungroup() %>%
-      mutate(START_YEAR_expand = year(date_sequence),
+      dplyr::ungroup() %>%
+      dplyr::mutate(START_YEAR_expand = year(date_sequence),
              END_YEAR_expand = year(date_sequence)) %>%
       # function wday formats at Mon, Tue, etc.
-      mutate(Expand_day_of_week = wday(date_sequence, label = TRUE)) %>%
+      dplyr::mutate(Expand_day_of_week = wday(date_sequence, label = TRUE)) %>%
       # Retain on records within expand range
-      filter(Expand_day_of_week >= START_DAY_OF_WEEK_EXPAND |
+      dplyr::filter(Expand_day_of_week >= START_DAY_OF_WEEK_EXPAND |
                Expand_day_of_week <= END_DAY_OF_WEEK_EXPAND) %>%
-      select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
+      dplyr::select(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence, TIME,
              CLUSTER, REGULATION_ID, FR_CITATION, VALUE, VALUE_UNITS, VALUE_TYPE, VALUE_RATE) %>%
-      arrange(date_sequence, desc(FR_CITATION)) %>%
-      group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
+      dplyr::arrange(date_sequence, desc(FR_CITATION)) %>%
+      dplyr::group_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence) %>%
       # Retain only most recent FR if there are 2 records with the same date_sequence
-      slice(1) %>%
-      rename(CLUSTER_weekly = "CLUSTER",
+      dplyr::slice(1) %>%
+      dplyr::rename(CLUSTER_weekly = "CLUSTER",
              REGULATION_ID_weekly = "REGULATION_ID",
              FR_CITATION_weekly = "FR_CITATION",
              TIME_weekly = "TIME",
@@ -249,21 +249,21 @@ expand_status <- function(x, y) {
   # Then limit variables and rename
   # Then create final VALUE fields based on all status events
   combine <- df_one %>%
-    full_join(df_weekly,
+    dplyr::full_join(df_weekly,
               by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence)) %>%
-    full_join(df_seasonal,
+    dplyr::full_join(df_seasonal,
               by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence)) %>%
-    full_join(df_monthly,
+    dplyr::full_join(df_monthly,
               by = join_by(FMP, COMMON_NAME_USE, REGION, ZONE_USE, SECTOR_USE, SUBSECTOR_USE, MANAGEMENT_TYPE_USE, date_sequence)) %>%
     # Remove records from empty dataframes
-    filter(!is.na(FMP)) %>%
+    dplyr::filter(!is.na(FMP)) %>%
     # create final VALUE fields 
-    ungroup() %>% 
-    rowwise() %>%
+    dplyr::ungroup() %>% 
+    dplyr::rowwise() %>%
     # For MANAGEMENT_TYPE_USE == "CLOSURE": On a specific date_sequence, if the most recent FR_CITATION applies to multiple closure types (i.e., one time closure and monthly recurring)
     # Then maintain the more restrictive value (CLOSE)
     # Otherwise, the most recent FR_CITATION should be maintained with associated value fields
-    mutate(max_citation = pmax(FR_CITATION_one, FR_CITATION_seasonal, FR_CITATION_weekly, FR_CITATION_monthly, na.rm = TRUE),
+    dplyr::mutate(max_citation = pmax(FR_CITATION_one, FR_CITATION_seasonal, FR_CITATION_weekly, FR_CITATION_monthly, na.rm = TRUE),
            matched_values = list(c(
              if (isTRUE(FR_CITATION_one == max_citation)) VALUE_one else NULL,
              if (isTRUE(FR_CITATION_seasonal == max_citation)) VALUE_seasonal else NULL,
@@ -295,7 +295,7 @@ expand_status <- function(x, y) {
                                       FR_CITATION == FR_CITATION_weekly ~ VALUE_RATE_weekly,
                                       FR_CITATION == FR_CITATION_seasonal ~ VALUE_RATE_seasonal,
                                       FR_CITATION == FR_CITATION_monthly ~ VALUE_RATE_monthly)) %>%
-               ungroup()
+               dplyr::ungroup()
   
   return(combine)
   
